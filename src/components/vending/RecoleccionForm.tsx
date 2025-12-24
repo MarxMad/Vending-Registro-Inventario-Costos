@@ -24,6 +24,17 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
     }>
   >([]);
   const [rellenos, setRellenos] = useState<Array<{ compartimentoId: string; cantidad: number }>>([]);
+  const [fecha, setFecha] = useState(() => {
+    // Por defecto usar fecha y hora actual
+    const now = new Date();
+    // Formato YYYY-MM-DDTHH:mm para input datetime-local
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  });
   const [notas, setNotas] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -141,9 +152,12 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
     setLoading(true);
 
     try {
+      // Convertir fecha del input a ISO string
+      const fechaISO = new Date(fecha).toISOString();
+      
       const recoleccion: Omit<Recoleccion, "id"> = {
         maquinaId: maquina.id,
-        fecha: new Date().toISOString(),
+        fecha: fechaISO,
         ingresos: calcularIngresosTotales(),
         productosVendidos: productosVendidos.map((p) => ({
           compartimentoId: p.compartimentoId,
@@ -229,6 +243,21 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Fecha de Recolección */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Fecha y Hora de Recolección *</label>
+          <input
+            type="datetime-local"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            required
+            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Puedes ajustar la fecha si estás registrando una recolección de un día anterior
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-2">Productos Vendidos</label>
           <div className="space-y-2">
