@@ -55,6 +55,7 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
         }));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUbicacionChange = (field: keyof Ubicacion, value: any) => {
