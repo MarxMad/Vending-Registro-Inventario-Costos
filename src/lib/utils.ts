@@ -45,18 +45,24 @@ export function getMiniAppEmbedMetadata(ogImageUrl?: string) {
 }
 
 export async function getFarcasterDomainManifest(): Promise<Manifest> {
-  return {
-    accountAssociation: APP_ACCOUNT_ASSOCIATION!,
+  const manifestBase: any = {
     miniapp: {
       version: '1',
-      name: APP_NAME ?? 'Neynar Starter Kit',
+      name: APP_NAME ?? 'Gestión de Máquinas Vending',
       homeUrl: APP_URL,
       iconUrl: APP_ICON_URL,
       imageUrl: APP_OG_IMAGE_URL,
-      buttonTitle: APP_BUTTON_TEXT ?? 'Launch Mini App',
+      buttonTitle: APP_BUTTON_TEXT ?? 'Empezar Vending',
       splashImageUrl: APP_SPLASH_URL,
       splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
       webhookUrl: APP_WEBHOOK_URL,
     },
   };
+
+  // Solo incluir accountAssociation si está definido
+  if (APP_ACCOUNT_ASSOCIATION) {
+    manifestBase.accountAssociation = APP_ACCOUNT_ASSOCIATION;
+  }
+
+  return manifestBase as Manifest;
 }
