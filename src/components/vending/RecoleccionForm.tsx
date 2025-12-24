@@ -89,7 +89,7 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
           productoNombre: p.productoNombre,
           ingresos: p.ingresos,
         })),
-        costos: costos.length > 0 ? costos : undefined,
+        costos: costos.length > 0 ? costos : [],
         notas: notas || undefined,
       };
 
