@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "~/components/ui/Button";
-import { Input } from "~/components/ui/input";
 import type { Maquina, Recoleccion } from "~/lib/types";
 import { DollarSign, X } from "lucide-react";
 

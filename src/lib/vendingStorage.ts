@@ -5,8 +5,18 @@ import type { Maquina, Recoleccion, NotificacionRecoleccion, CostoInsumo } from 
 // In-memory fallback storage
 const localStore = new Map<string, any>();
 
-// Use Redis if KV env vars are present, otherwise use in-memory
-const useRedis = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
+// Use Redis if KV env vars are present and valid, otherwise use in-memory
+const isValidUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const useRedis = isValidUrl(process.env.KV_REST_API_URL) && process.env.KV_REST_API_TOKEN;
 const redis = useRedis
   ? new Redis({
       url: process.env.KV_REST_API_URL!,
