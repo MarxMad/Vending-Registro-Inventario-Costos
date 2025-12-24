@@ -44,13 +44,16 @@ export function Button({
     },
   };
 
+  // Filtrar props que causan conflictos de tipos con framer-motion
+  const { onAnimationStart, onAnimationEnd, ...motionProps } = props as any;
+
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       className={`rounded-xl transition-all ${sizeClasses[size]} ${className}`}
       style={variantStyles[variant]}
-      {...props}
+      {...motionProps}
     >
       {isLoading ? (
         <div className="flex items-center justify-center">
