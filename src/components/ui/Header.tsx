@@ -3,14 +3,14 @@
 import { motion } from "framer-motion";
 import { useMiniApp } from "@neynar/react";
 import { UserButton } from "@clerk/nextjs";
-import type { User } from "@clerk/nextjs/server";
+import type { UserResource } from "@clerk/types";
 
 type HeaderProps = {
   neynarUser?: {
     fid: number;
     score: number;
   } | null;
-  clerkUser?: User | null;
+  clerkUser?: UserResource | null;
 };
 
 export function Header({ clerkUser }: HeaderProps) {
