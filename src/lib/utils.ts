@@ -58,13 +58,13 @@ export async function getFarcasterDomainManifest(): Promise<Manifest> {
       webhookUrl: APP_WEBHOOK_URL,
       // Campos adicionales del manifest
       description: APP_DESCRIPTION,
-      subtitle: 'Gestiona tu negocio de máquinas vending de forma eficiente',
+      subtitle: 'Gestión de máquinas vending', // Máximo 30 caracteres
       primaryCategory: APP_PRIMARY_CATEGORY,
       tags: APP_TAGS,
       heroImageUrl: APP_OG_IMAGE_URL,
-      tagline: 'Control total de tus máquinas vending',
+      tagline: 'Control total vending', // Máximo 30 caracteres
       ogTitle: APP_NAME,
-      ogDescription: APP_DESCRIPTION,
+      ogDescription: 'Gestiona tus máquinas vending: registra máquinas, controla recolecciones y calcula rentabilidad', // Máximo 100 caracteres
       ogImageUrl: APP_OG_IMAGE_URL,
       castShareUrl: `${APP_URL}/share`,
     },
