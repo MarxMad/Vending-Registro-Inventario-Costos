@@ -8,10 +8,22 @@ export const revalidate = 300;
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: APP_NAME,
+    description: APP_DESCRIPTION,
+    icons: {
+      icon: '/VendingLogo3D.png',
+      apple: '/VendingLogo3D.png',
+    },
     openGraph: {
       title: APP_NAME,
       description: APP_DESCRIPTION,
-      images: [APP_OG_IMAGE_URL],
+      images: ['/VendingLogo3D.png'],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: APP_NAME,
+      description: APP_DESCRIPTION,
+      images: ['/VendingLogo3D.png'],
     },
     other: {
       "fc:frame": JSON.stringify(getMiniAppEmbedMetadata()),

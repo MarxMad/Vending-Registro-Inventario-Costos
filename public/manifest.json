@@ -1,0 +1,29 @@
+{
+  "name": "Gestión de Máquinas Vending",
+  "short_name": "Vending",
+  "description": "Gestiona tus máquinas vending: registra máquinas, controla recolecciones, calcula rentabilidad y recibe notificaciones",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/VendingLogo3D.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/VendingLogo3D.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
