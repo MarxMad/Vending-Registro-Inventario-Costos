@@ -45,6 +45,7 @@ export function Button({
   };
 
   // Filtrar props que causan conflictos de tipos con framer-motion
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { onAnimationStart, onAnimationEnd, ...motionProps } = props as any;
 
   return (
