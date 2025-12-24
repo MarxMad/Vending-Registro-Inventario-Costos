@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getMaquinas, saveMaquina, deleteMaquina } from '~/lib/vendingStorage';
 import { z } from 'zod';
-import type { Maquina } from '~/lib/types';
+import type { Maquina, Producto, Compartimento } from '~/lib/types';
 
 // Schema de validación para crear/actualizar máquina
 const maquinaSchema = z.object({
@@ -86,8 +86,16 @@ export async function POST(request: NextRequest) {
     // Generar ID si no existe
     const id = data.id || `maquina-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Crear compartimentos según el tipo
-    let compartimentos = data.compartimentos;
+    // Crear compartimentos según el tipo - asegurar que producto sea null en lugar de undefined
+    let compartimentos: Compartimento[] = data.compartimentos.map(comp => ({
+      id: comp.id,
+      producto: comp.producto ?? null,
+      capacidad: comp.capacidad,
+      cantidadActual: comp.cantidadActual,
+      tipoProducto: comp.tipoProducto,
+      tipoGranelBola: comp.tipoGranelBola,
+    }));
+    
     if (compartimentos.length === 0) {
       if (data.tipo === 'peluchera') {
         compartimentos = [{

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import type { Maquina } from "~/lib/types";
 import { Package, X } from "lucide-react";

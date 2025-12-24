@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/Button";
-import { Input } from "~/components/ui/input";
-import type { Maquina, TipoMaquina, TipoChiclera } from "~/lib/types";
+import type { Maquina } from "~/lib/types";
 import { Plus, MapPin, Package, Calendar, Edit, Trash2, Info } from "lucide-react";
 import { MaquinaDetalle } from "./MaquinaDetalle";
 import { MaquinaFormMejorado } from "./MaquinaFormMejorado";
