@@ -35,6 +35,7 @@ const maquinaSchema = z.object({
     cantidadActual: z.number().min(0),
     tipoProducto: z.string().optional(),
     tipoGranelBola: z.enum(['granel', 'bola']).optional(),
+    precioVenta: z.number().min(0).optional(),
   })),
   costoMaquina: z.number().min(0),
   fechaInstalacion: z.string(),
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
       cantidadActual: comp.cantidadActual,
       tipoProducto: comp.tipoProducto as ProductoChiclera | ProductoPeluchera | undefined,
       tipoGranelBola: comp.tipoGranelBola,
+      precioVenta: comp.precioVenta,
     }));
     
     if (compartimentos.length === 0) {

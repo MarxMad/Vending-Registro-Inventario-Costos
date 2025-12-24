@@ -43,16 +43,45 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
         (compartimento.tipoProducto as string).slice(1) 
       : "Producto");
     
-    // Obtener precio: del producto o usar un valor por defecto (0 si no hay)
-    const precio = compartimento.producto?.precio || 0;
+    // Obtener precio: primero precioVenta, luego producto.precio, luego 0
+    const precio = compartimento.precioVenta || compartimento.producto?.precio || 0;
 
-    const cantidad = prompt(`Cantidad vendida de ${nombreProducto}:`);
-    if (!cantidad) return;
+    // Preguntar si quiere ingresar cantidad o ingresos
+    const modo = precio > 0 
+      ? prompt(`¿Cómo quieres registrar la venta de ${nombreProducto}?\n1. Ingresar cantidad de piezas\n2. Ingresar ingresos totales\n\nEscribe "1" o "2":`)
+      : "1";
+    
+    if (!modo) return;
 
-    const cantidadNum = parseInt(cantidad) || 0;
-    if (cantidadNum <= 0) return;
+    let cantidadNum = 0;
+    let ingresos = 0;
 
-    const ingresos = precio > 0 ? cantidadNum * precio : 0;
+    if (modo === "2" && precio > 0) {
+      // Modo ingresos: calcular cantidad automáticamente
+      const ingresosInput = prompt(`Ingresos totales de ${nombreProducto} (precio unitario: $${precio}):`);
+      if (!ingresosInput) return;
+
+      ingresos = parseFloat(ingresosInput) || 0;
+      if (ingresos <= 0) return;
+
+      // Calcular cantidad: Ingreso / precio de venta = piezas vendidas
+      cantidadNum = Math.round((ingresos / precio) * 100) / 100; // Redondear a 2 decimales
+      
+      if (cantidadNum <= 0) {
+        alert("Los ingresos deben ser mayores al precio unitario");
+        return;
+      }
+    } else {
+      // Modo cantidad: calcular ingresos
+      const cantidad = prompt(`Cantidad vendida de ${nombreProducto}${precio > 0 ? ` (precio: $${precio})` : ""}:`);
+      if (!cantidad) return;
+
+      cantidadNum = parseFloat(cantidad) || 0;
+      if (cantidadNum <= 0) return;
+
+      ingresos = precio > 0 ? cantidadNum * precio : 0;
+    }
+
     const productoId = compartimento.producto?.id || compartimento.id;
 
     setProductosVendidos([
@@ -210,7 +239,7 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
                   (comp.tipoProducto as string).charAt(0).toUpperCase() + 
                   (comp.tipoProducto as string).slice(1) 
                 : "Sin producto");
-              const precio = comp.producto?.precio || 0;
+              const precio = comp.precioVenta || comp.producto?.precio || 0;
               const tieneProducto = comp.producto || comp.tipoProducto;
 
               return (
@@ -220,6 +249,11 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
                     {tieneProducto && (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {precio > 0 ? `Precio: $${precio} | ` : ""}Stock: {comp.cantidadActual} / {comp.capacidad}
+                        {precio > 0 && (
+                          <span className="text-xs text-blue-600 ml-2">
+                            (Puedes ingresar ingresos y calcular piezas automáticamente)
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>

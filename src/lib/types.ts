@@ -25,6 +25,7 @@ export interface Compartimento {
   cantidadActual: number;
   tipoProducto?: ProductoChiclera | ProductoPeluchera; // Tipo específico del producto
   tipoGranelBola?: TipoProductoChiclera; // Granel o Bola para chicleras
+  precioVenta?: number; // Precio de venta del producto en este compartimento
 }
 
 export interface Ubicacion {

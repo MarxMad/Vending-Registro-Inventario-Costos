@@ -34,6 +34,9 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
       // Si tiene producto, usar el nombre del producto, si no usar tipoProducto
       return c.producto?.nombre || c.tipoProducto || "";
     }) || [] as string[],
+    preciosVenta: maquina?.compartimentos.map(c => 
+      c.precioVenta || c.producto?.precio || 0
+    ) || [] as number[],
     diasRecoleccionEstimados: maquina?.diasRecoleccionEstimados || 7,
     notas: maquina?.notas || "",
     imagen: maquina?.imagen || "",
@@ -45,13 +48,19 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
   useEffect(() => {
     if (!maquina && formData.productos.length === 0) {
       if (formData.tipo === "peluchera") {
-        setFormData(prev => ({ ...prev, productos: ["peluches"], tiposProductoChiclera: [] }));
+        setFormData(prev => ({ 
+          ...prev, 
+          productos: ["peluches"], 
+          tiposProductoChiclera: [],
+          preciosVenta: [0]
+        }));
       } else {
         const cantidad = formData.tipoChiclera === "doble" ? 2 : formData.tipoChiclera === "triple" ? 3 : 1;
         setFormData(prev => ({ 
           ...prev, 
           productos: Array(cantidad).fill(""),
-          tiposProductoChiclera: Array(cantidad).fill("granel") as TipoProductoChiclera[]
+          tiposProductoChiclera: Array(cantidad).fill("granel") as TipoProductoChiclera[],
+          preciosVenta: Array(cantidad).fill(0)
         }));
       }
     }
@@ -135,6 +144,8 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
         tipoProducto: producto as any,
         // Guardar también el tipo (granel/bola) para chicleras
         tipoGranelBola: formData.tipo === "chiclera" ? formData.tiposProductoChiclera[index] : undefined,
+        // Guardar precio de venta
+        precioVenta: formData.preciosVenta[index] || 0,
       }));
 
       const url = "/api/maquinas";
@@ -385,14 +396,36 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
           <label className="block text-sm font-bold mb-2 text-gray-800">Productos *</label>
           <div className="space-y-3">
             {formData.tipo === "peluchera" ? (
-              <select
-                value={formData.productos[0] || ""}
-                onChange={(e) => handleProductoChange(0, e.target.value)}
-                className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
-                required
-              >
-                <option value="peluches">Peluches</option>
-              </select>
+              <div className="space-y-2 p-3 rounded-xl border-2 border-yellow-200 bg-yellow-50">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Producto *</label>
+                  <select
+                    value={formData.productos[0] || ""}
+                    onChange={(e) => handleProductoChange(0, e.target.value)}
+                    className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+                    required
+                  >
+                    <option value="peluches">Peluches</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Precio de Venta ($) *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.preciosVenta[0] || ""}
+                    onChange={(e) => {
+                      const nuevosPrecios = [...formData.preciosVenta];
+                      nuevosPrecios[0] = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, preciosVenta: nuevosPrecios });
+                    }}
+                    placeholder="0.00"
+                    required
+                    className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
+                  />
+                </div>
+              </div>
             ) : (
               Array.from({ length: cantidadCompartimentos }).map((_, index) => (
                 <div key={index} className="space-y-2 p-3 rounded-xl border-2 border-yellow-200 bg-yellow-50">
@@ -427,6 +460,23 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
                         <option value="granel">Granel</option>
                         <option value="bola">Bola</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Precio de Venta ($) *</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.preciosVenta[index] || ""}
+                        onChange={(e) => {
+                          const nuevosPrecios = [...formData.preciosVenta];
+                          nuevosPrecios[index] = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, preciosVenta: nuevosPrecios });
+                        }}
+                        placeholder="0.00"
+                        required
+                        className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
+                      />
                     </div>
                   </div>
                 </div>
