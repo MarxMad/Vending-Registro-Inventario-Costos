@@ -399,7 +399,7 @@ export function Dashboard({ userId }: DashboardProps) {
                   <div>
                     <p className="font-bold text-gray-800">{notif.maquinaNombre}</p>
                       <p className="text-sm text-gray-700">
-                        {typeof notif.ubicacion === 'string' ? notif.ubicacion : notif.ubicacion.direccion}
+                        {notif.ubicacion}
                       </p>
                     <p className="text-xs mt-1 text-gray-600">
                       {notif.diasDesdeUltimaRecoleccion} días desde última recolección
