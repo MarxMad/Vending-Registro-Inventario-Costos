@@ -24,8 +24,7 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
       ingresos: number;
     }>
   >([]);
-  const [costos, setCostos] = useState<Array<{ concepto: string; monto: number }>>([]);
-  const [nuevoCosto, setNuevoCosto] = useState({ concepto: "", monto: 0 });
+  const [rellenos, setRellenos] = useState<Array<{ compartimentoId: string; cantidad: number }>>([]);
   const [notas, setNotas] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,24 +34,35 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
 
   const handleAgregarProducto = (compartimentoId: string) => {
     const compartimento = maquina.compartimentos.find((c) => c.id === compartimentoId);
-    if (!compartimento || !compartimento.producto) return;
+    if (!compartimento) return;
 
-    const cantidad = prompt(`Cantidad vendida de ${compartimento.producto.nombre}:`);
+    // Obtener nombre del producto: primero de producto, luego de tipoProducto
+    const nombreProducto = compartimento.producto?.nombre || 
+      (compartimento.tipoProducto ? 
+        (compartimento.tipoProducto as string).charAt(0).toUpperCase() + 
+        (compartimento.tipoProducto as string).slice(1) 
+      : "Producto");
+    
+    // Obtener precio: del producto o usar un valor por defecto (0 si no hay)
+    const precio = compartimento.producto?.precio || 0;
+
+    const cantidad = prompt(`Cantidad vendida de ${nombreProducto}:`);
     if (!cantidad) return;
 
     const cantidadNum = parseInt(cantidad) || 0;
     if (cantidadNum <= 0) return;
 
-    const ingresos = cantidadNum * compartimento.producto.precio;
+    const ingresos = precio > 0 ? cantidadNum * precio : 0;
+    const productoId = compartimento.producto?.id || compartimento.id;
 
     setProductosVendidos([
       ...productosVendidos,
       {
         compartimentoId,
         cantidad: cantidadNum,
-        productoId: compartimento.producto.id,
-        productoNombre: compartimento.producto.nombre,
-        precio: compartimento.producto.precio,
+        productoId,
+        productoNombre: nombreProducto,
+        precio,
         ingresos,
       },
     ]);
@@ -62,15 +72,40 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
     setProductosVendidos(productosVendidos.filter((_, i) => i !== index));
   };
 
-  const handleAgregarCosto = () => {
-    if (nuevoCosto.concepto && nuevoCosto.monto > 0) {
-      setCostos([...costos, nuevoCosto]);
-      setNuevoCosto({ concepto: "", monto: 0 });
+  const handleAgregarRelleno = (compartimentoId: string) => {
+    const compartimento = maquina.compartimentos.find((c) => c.id === compartimentoId);
+    if (!compartimento) return;
+
+    const nombreProducto = compartimento.producto?.nombre || 
+      (compartimento.tipoProducto ? 
+        (compartimento.tipoProducto as string).charAt(0).toUpperCase() + 
+        (compartimento.tipoProducto as string).slice(1) 
+      : "Producto");
+
+    const cantidad = prompt(`Cantidad rellenada de ${nombreProducto} (máximo ${compartimento.capacidad - compartimento.cantidadActual}):`);
+    if (!cantidad) return;
+
+    const cantidadNum = parseInt(cantidad) || 0;
+    if (cantidadNum <= 0) return;
+
+    const maxRelleno = compartimento.capacidad - compartimento.cantidadActual;
+    if (cantidadNum > maxRelleno) {
+      alert(`No puedes rellenar más de ${maxRelleno} unidades. Capacidad máxima: ${compartimento.capacidad}`);
+      return;
+    }
+
+    const existingIndex = rellenos.findIndex(r => r.compartimentoId === compartimentoId);
+    if (existingIndex >= 0) {
+      const nuevosRellenos = [...rellenos];
+      nuevosRellenos[existingIndex] = { compartimentoId, cantidad: cantidadNum };
+      setRellenos(nuevosRellenos);
+    } else {
+      setRellenos([...rellenos, { compartimentoId, cantidad: cantidadNum }]);
     }
   };
 
-  const handleEliminarCosto = (index: number) => {
-    setCostos(costos.filter((_, i) => i !== index));
+  const handleEliminarRelleno = (compartimentoId: string) => {
+    setRellenos(rellenos.filter(r => r.compartimentoId !== compartimentoId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,10 +124,11 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
           productoNombre: p.productoNombre,
           ingresos: p.ingresos,
         })),
-        costos: costos.length > 0 ? costos : [],
+        costos: [],
         notas: notas || undefined,
       };
 
+      // Primero guardar la recolección
       const response = await fetch("/api/recolecciones", {
         method: "POST",
         headers: { 
@@ -101,12 +137,43 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
         body: JSON.stringify(recoleccion),
       });
 
-      if (response.ok) {
-        onSave();
-      } else {
+      if (!response.ok) {
         const error = await response.json();
         alert(`Error: ${error.error}`);
+        return;
       }
+
+      // Luego actualizar los rellenos de productos si hay
+      if (rellenos.length > 0) {
+        try {
+          const maquinaActualizada = { ...maquina };
+          rellenos.forEach(relleno => {
+            const compartimento = maquinaActualizada.compartimentos.find(c => c.id === relleno.compartimentoId);
+            if (compartimento) {
+              compartimento.cantidadActual = Math.min(
+                compartimento.capacidad,
+                compartimento.cantidadActual + relleno.cantidad
+              );
+            }
+          });
+
+          const updateResponse = await fetch("/api/maquinas", {
+            method: "PUT",
+            headers: { 
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ maquina: maquinaActualizada }),
+          });
+
+          if (!updateResponse.ok) {
+            console.error("Error actualizando rellenos");
+          }
+        } catch (error) {
+          console.error("Error actualizando rellenos:", error);
+        }
+      }
+
+      onSave();
     } catch (error) {
       console.error("Error guardando recolección:", error);
       alert("Error al guardar la recolección");
@@ -137,35 +204,43 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
         <div>
           <label className="block text-sm font-medium mb-2">Productos Vendidos</label>
           <div className="space-y-2">
-            {maquina.compartimentos.map((comp) => (
-              <div key={comp.id} className="flex items-center justify-between p-2 border rounded">
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {comp.producto ? comp.producto.nombre : "Sin producto"}
-                  </p>
-                  {comp.producto && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Precio: ${comp.producto.precio} | Stock: {comp.cantidadActual}
-                    </p>
+            {maquina.compartimentos.map((comp) => {
+              const nombreProducto = comp.producto?.nombre || 
+                (comp.tipoProducto ? 
+                  (comp.tipoProducto as string).charAt(0).toUpperCase() + 
+                  (comp.tipoProducto as string).slice(1) 
+                : "Sin producto");
+              const precio = comp.producto?.precio || 0;
+              const tieneProducto = comp.producto || comp.tipoProducto;
+
+              return (
+                <div key={comp.id} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex-1">
+                    <p className="font-medium">{nombreProducto}</p>
+                    {tieneProducto && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {precio > 0 ? `Precio: $${precio} | ` : ""}Stock: {comp.cantidadActual} / {comp.capacidad}
+                      </p>
+                    )}
+                  </div>
+                  {tieneProducto && (
+                    <Button
+                      type="button"
+                      onClick={() => handleAgregarProducto(comp.id)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Venta
+                    </Button>
                   )}
                 </div>
-                {comp.producto && (
-                  <Button
-                    type="button"
-                    onClick={() => handleAgregarProducto(comp.id)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Agregar
-                  </Button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {productosVendidos.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium">Productos Registrados:</p>
+              <p className="text-sm font-medium">Ventas Registradas:</p>
               {productosVendidos.map((pv, index) => (
                 <div
                   key={index}
@@ -174,7 +249,7 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
                   <div>
                     <p className="font-medium">{pv.productoNombre}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {pv.cantidad} x ${pv.precio} = ${pv.ingresos}
+                      {pv.cantidad} {pv.precio > 0 ? `x $${pv.precio} = $${pv.ingresos}` : "unidades"}
                     </p>
                   </div>
                   <button
@@ -191,49 +266,56 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Costos Adicionales</label>
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Concepto (ej: transporte, mantenimiento)"
-              value={nuevoCosto.concepto}
-              onChange={(e) => setNuevoCosto({ ...nuevoCosto, concepto: e.target.value })}
-              className="flex-1 bg-white text-black"
-            />
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Monto"
-              value={nuevoCosto.monto || ""}
-              onChange={(e) =>
-                setNuevoCosto({ ...nuevoCosto, monto: parseFloat(e.target.value) || 0 })
-              }
-              className="w-24 bg-white text-black"
-            />
-            <Button type="button" onClick={handleAgregarCosto} size="sm">
-              +
-            </Button>
-          </div>
-          {costos.length > 0 && (
-            <div className="space-y-1">
-              {costos.map((costo, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
-                >
-                  <span className="text-sm">
-                    {costo.concepto}: ${costo.monto}
-                  </span>
-                  <button
+          <label className="block text-sm font-medium mb-2">Relleno de Productos</label>
+          <p className="text-xs text-gray-500 mb-2">Registra cuánto producto rellenaste en cada compartimento</p>
+          <div className="space-y-2">
+            {maquina.compartimentos.map((comp) => {
+              const nombreProducto = comp.producto?.nombre || 
+                (comp.tipoProducto ? 
+                  (comp.tipoProducto as string).charAt(0).toUpperCase() + 
+                  (comp.tipoProducto as string).slice(1) 
+                : "Sin producto");
+              const tieneProducto = comp.producto || comp.tipoProducto;
+              const relleno = rellenos.find(r => r.compartimentoId === comp.id);
+              const espacioDisponible = comp.capacidad - comp.cantidadActual;
+
+              if (!tieneProducto) return null;
+
+              return (
+                <div key={comp.id} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex-1">
+                    <p className="font-medium">{nombreProducto}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Stock actual: {comp.cantidadActual} / {comp.capacidad} 
+                      {espacioDisponible > 0 && ` (Espacio: ${espacioDisponible})`}
+                    </p>
+                    {relleno && (
+                      <p className="text-sm text-green-600 font-semibold mt-1">
+                        +{relleno.cantidad} unidades
+                      </p>
+                    )}
+                  </div>
+                  <Button
                     type="button"
-                    onClick={() => handleEliminarCosto(index)}
-                    className="text-red-600 hover:text-red-800"
+                    onClick={() => handleAgregarRelleno(comp.id)}
+                    size="sm"
+                    variant="secondary"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    {relleno ? "Cambiar" : "Rellenar"}
+                  </Button>
+                  {relleno && (
+                    <button
+                      type="button"
+                      onClick={() => handleEliminarRelleno(comp.id)}
+                      className="ml-2 text-red-600 hover:text-red-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
         <div>
@@ -253,12 +335,11 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
               ${calcularIngresosTotales().toFixed(2)}
             </span>
           </div>
-          {costos.length > 0 && (
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Total Costos:</span>
-              <span className="text-sm text-red-600 dark:text-red-400">
-                ${costos.reduce((sum, c) => sum + c.monto, 0).toFixed(2)}
-              </span>
+          {rellenos.length > 0 && (
+            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Se actualizará el stock de {rellenos.length} compartimento{rellenos.length > 1 ? 's' : ''} después de guardar
+              </p>
             </div>
           )}
         </div>
