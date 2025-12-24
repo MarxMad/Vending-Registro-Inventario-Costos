@@ -33,7 +33,7 @@ export const Footer: React.FC<FooterProps> = ({ activeTab, setActiveTab }) => {
       }}
     >
       <div className="max-w-md mx-auto px-4 py-3">
-        <div className="flex justify-around items-center h-14">
+    <div className="flex justify-around items-center h-14">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -51,22 +51,22 @@ export const Footer: React.FC<FooterProps> = ({ activeTab, setActiveTab }) => {
                     isActive 
                       ? 'text-blue-600 scale-110' 
                       : 'text-gray-400'
-                  }`} 
+        }`}
                 />
                 <span 
                   className={`text-xs mt-1 transition-all ${
                     isActive 
                       ? 'text-blue-600 font-bold' 
                       : 'text-gray-400'
-                  }`}
-                >
+          }`}
+        >
                   {tab.label}
                 </span>
               </motion.button>
             );
           })}
-        </div>
-      </div>
+    </div>
+  </div>
     </motion.div>
-  );
+);
 };

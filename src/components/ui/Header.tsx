@@ -34,9 +34,9 @@ export function Header({ clerkUser }: HeaderProps) {
               }}
             />
           ) : context?.user?.pfpUrl ? (
-            <img 
-              src={context.user.pfpUrl} 
-              alt="Profile" 
+              <img 
+                src={context.user.pfpUrl} 
+                alt="Profile" 
               className="w-10 h-10 rounded-full border-2 border-blue-500 shadow-lg"
             />
           ) : null}
