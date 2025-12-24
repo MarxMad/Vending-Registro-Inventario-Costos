@@ -1,9 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const isPublicRoute = createRouteMatcher(['/']);
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/.well-known/farcaster.json',
+  '/api/webhook',
+]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // Permitir acceso público a la ruta raíz
+  // Permitir acceso público a rutas específicas
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
