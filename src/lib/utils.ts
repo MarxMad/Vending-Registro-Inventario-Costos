@@ -56,6 +56,17 @@ export async function getFarcasterDomainManifest(): Promise<Manifest> {
       splashImageUrl: APP_SPLASH_URL,
       splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
       webhookUrl: APP_WEBHOOK_URL,
+      // Campos adicionales del manifest
+      description: APP_DESCRIPTION,
+      subtitle: 'Gestiona tu negocio de máquinas vending de forma eficiente',
+      primaryCategory: APP_PRIMARY_CATEGORY,
+      tags: APP_TAGS,
+      heroImageUrl: APP_OG_IMAGE_URL,
+      tagline: 'Control total de tus máquinas vending',
+      ogTitle: APP_NAME,
+      ogDescription: APP_DESCRIPTION,
+      ogImageUrl: APP_OG_IMAGE_URL,
+      castShareUrl: `${APP_URL}/share`,
     },
   };
 

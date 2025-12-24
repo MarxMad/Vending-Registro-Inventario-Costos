@@ -3,7 +3,7 @@ import { getFarcasterDomainManifest } from '~/lib/utils';
 
 export async function GET() {
   try {
-    const config = await getFarcasterDomainManifest();
+    const config: any = await getFarcasterDomainManifest();
     
     if (!config.miniapp) {
       return NextResponse.json(
@@ -35,6 +35,17 @@ export async function GET() {
         splashImageUrl: config.miniapp.splashImageUrl ? normalizeUrl(config.miniapp.splashImageUrl) : undefined,
         splashBackgroundColor: config.miniapp.splashBackgroundColor,
         webhookUrl: config.miniapp.webhookUrl,
+        // Campos adicionales del manifest (acceder de forma segura)
+        ...(config.miniapp.description && { description: config.miniapp.description }),
+        ...(config.miniapp.subtitle && { subtitle: config.miniapp.subtitle }),
+        ...(config.miniapp.primaryCategory && { primaryCategory: config.miniapp.primaryCategory }),
+        ...(config.miniapp.tags && { tags: config.miniapp.tags }),
+        ...(config.miniapp.heroImageUrl && { heroImageUrl: normalizeUrl(config.miniapp.heroImageUrl) }),
+        ...(config.miniapp.tagline && { tagline: config.miniapp.tagline }),
+        ...(config.miniapp.ogTitle && { ogTitle: config.miniapp.ogTitle }),
+        ...(config.miniapp.ogDescription && { ogDescription: config.miniapp.ogDescription }),
+        ...(config.miniapp.ogImageUrl && { ogImageUrl: normalizeUrl(config.miniapp.ogImageUrl) }),
+        ...(config.miniapp.castShareUrl && { castShareUrl: normalizeUrl(config.miniapp.castShareUrl) }),
       },
     };
 

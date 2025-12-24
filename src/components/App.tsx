@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMiniApp } from "@neynar/react";
 import { useUser } from "@clerk/nextjs";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { Header } from "~/components/ui/Header";
 import { Footer } from "~/components/ui/Footer";
 import { HomeTab } from "~/components/ui/tabs";
@@ -88,6 +89,16 @@ export default function App(
       setInitialTab(Tab.Dashboard);
     }
   }, [isSDKLoaded, authenticatedUserId, setInitialTab]);
+
+  // Llamar a sdk.actions.ready() cuando la app esté completamente cargada
+  useEffect(() => {
+    if (isSDKLoaded && isClerkLoaded && authenticatedUserId && user) {
+      // La app está lista, notificar al SDK
+      sdk.actions.ready().catch((error) => {
+        console.error('Error calling sdk.actions.ready():', error);
+      });
+    }
+  }, [isSDKLoaded, isClerkLoaded, authenticatedUserId, user]);
 
   // --- Early Returns ---
   if (!isSDKLoaded || !isClerkLoaded) {
