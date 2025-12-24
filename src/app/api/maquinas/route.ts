@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getMaquinas, saveMaquina, deleteMaquina } from '~/lib/vendingStorage';
 import { z } from 'zod';
-import type { Maquina, Producto, Compartimento } from '~/lib/types';
+import type { Maquina, Compartimento, ProductoChiclera, ProductoPeluchera } from '~/lib/types';
 
 // Schema de validación para crear/actualizar máquina
 const maquinaSchema = z.object({
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       producto: comp.producto ?? null,
       capacidad: comp.capacidad,
       cantidadActual: comp.cantidadActual,
-      tipoProducto: comp.tipoProducto,
+      tipoProducto: comp.tipoProducto as ProductoChiclera | ProductoPeluchera | undefined,
       tipoGranelBola: comp.tipoGranelBola,
     }));
     
