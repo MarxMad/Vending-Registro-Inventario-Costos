@@ -22,13 +22,13 @@ export const APP_URL: string = process.env.NEXT_PUBLIC_URL!;
  * The name of the mini app as displayed to users.
  * Used in titles, headers, and app store listings.
  */
-export const APP_NAME: string = 'vending-register';
+export const APP_NAME: string = 'Gestión de Máquinas Vending';
 
 /**
  * A brief description of the mini app's functionality.
  * Used in app store listings and metadata.
  */
-export const APP_DESCRIPTION: string = 'Miniapp for vending bussines';
+export const APP_DESCRIPTION: string = 'Gestiona tus máquinas vending: registra máquinas, controla recolecciones, calcula rentabilidad y recibe notificaciones';
 
 /**
  * The primary category for the mini app.
@@ -47,7 +47,7 @@ export const APP_TAGS: string[] = ['vending', 'nouns', 'gumball', 'machines'];
  * URL for the app's icon image.
  * Used in app store listings and UI elements.
  */
-export const APP_ICON_URL: string = `${APP_URL}/icon.png`;
+export const APP_ICON_URL: string = `${APP_URL}/VendingLogo3D.png`;
 
 /**
  * URL for the app's Open Graph image.

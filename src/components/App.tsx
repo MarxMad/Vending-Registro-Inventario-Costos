@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMiniApp } from "@neynar/react";
+import { useUser } from "@clerk/nextjs";
 import { Header } from "~/components/ui/Header";
 import { Footer } from "~/components/ui/Footer";
-import { HomeTab, ActionsTab, ContextTab, WalletTab } from "~/components/ui/tabs";
-import { USE_WALLET } from "~/lib/constants";
+import { HomeTab } from "~/components/ui/tabs";
+import { MaquinasTab } from "~/components/vending/MaquinasTab";
+import { RecoleccionesTab } from "~/components/ui/tabs/RecoleccionesTab";
+import { CostosTab } from "~/components/vending/CostosTab";
+import { RentabilidadView } from "~/components/vending/RentabilidadView";
+import { LoginScreen } from "~/components/auth/LoginScreen";
 import { useNeynarUser } from "../hooks/useNeynarUser";
 
 // --- Types ---
 export enum Tab {
-  Home = "home",
-  Actions = "actions",
-  Context = "context",
-  Wallet = "wallet",
+  Dashboard = "dashboard",
+  Maquinas = "maquinas",
+  Recolecciones = "recolecciones",
+  Costos = "costos",
+  Rentabilidad = "rentabilidad",
 }
 
 export interface AppProps {
@@ -50,7 +56,7 @@ export interface AppProps {
  * ```
  */
 export default function App(
-  { title }: AppProps = { title: "Neynar Starter Kit" }
+  { title }: AppProps = { title: "Gestión de Máquinas Vending" }
 ) {
   // --- Hooks ---
   const {
@@ -61,33 +67,43 @@ export default function App(
     currentTab,
   } = useMiniApp();
 
+  // --- Clerk auth hook ---
+  const { user, isLoaded: isClerkLoaded } = useUser();
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
+
   // --- Neynar user hook ---
   const { user: neynarUser } = useNeynarUser(context || undefined);
 
   // --- Effects ---
-  /**
-   * Sets the initial tab to "home" when the SDK is loaded.
-   * 
-   * This effect ensures that users start on the home tab when they first
-   * load the mini app. It only runs when the SDK is fully loaded to
-   * prevent errors during initialization.
-   */
   useEffect(() => {
-    if (isSDKLoaded) {
-      setInitialTab(Tab.Home);
+    if (user?.id) {
+      setAuthenticatedUserId(user.id);
+    } else {
+      setAuthenticatedUserId(null);
     }
-  }, [isSDKLoaded, setInitialTab]);
+  }, [user]);
+
+  useEffect(() => {
+    if (isSDKLoaded && authenticatedUserId) {
+      setInitialTab(Tab.Dashboard);
+    }
+  }, [isSDKLoaded, authenticatedUserId, setInitialTab]);
 
   // --- Early Returns ---
-  if (!isSDKLoaded) {
+  if (!isSDKLoaded || !isClerkLoaded) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="spinner h-8 w-8 mx-auto mb-4"></div>
-          <p>Loading SDK...</p>
+          <p>Cargando...</p>
         </div>
       </div>
     );
+  }
+
+  // Mostrar pantalla de login si no está autenticado
+  if (!authenticatedUserId || !user) {
+    return <LoginScreen onLogin={(userId) => setAuthenticatedUserId(userId)} />;
   }
 
   // --- Render ---
@@ -101,21 +117,33 @@ export default function App(
       }}
     >
       {/* Header should be full width */}
-      <Header neynarUser={neynarUser} />
+      <Header 
+        neynarUser={neynarUser} 
+        clerkUser={user}
+      />
 
       {/* Main content and footer should be centered */}
-      <div className="container py-2 pb-20">
+      <div className="container py-2 pb-24">
         {/* Main title */}
         <h1 className="text-2xl font-bold text-center mb-4">{title}</h1>
 
         {/* Tab content rendering */}
-        {currentTab === Tab.Home && <HomeTab />}
-        {currentTab === Tab.Actions && <ActionsTab />}
-        {currentTab === Tab.Context && <ContextTab />}
-        {currentTab === Tab.Wallet && <WalletTab />}
+        {currentTab === Tab.Dashboard && <HomeTab key={`dashboard-${currentTab}`} userId={authenticatedUserId} />}
+        {currentTab === Tab.Maquinas && (
+          <MaquinasTab key={`maquinas-${currentTab}`} userId={authenticatedUserId} />
+        )}
+        {currentTab === Tab.Recolecciones && (
+          <RecoleccionesTab userId={authenticatedUserId} />
+        )}
+        {currentTab === Tab.Costos && (
+          <CostosTab userId={authenticatedUserId} />
+        )}
+        {currentTab === Tab.Rentabilidad && (
+          <RentabilidadView userId={authenticatedUserId} />
+        )}
 
         {/* Footer with navigation */}
-        <Footer activeTab={currentTab as Tab} setActiveTab={setActiveTab} showWallet={USE_WALLET} />
+        <Footer activeTab={currentTab as Tab} setActiveTab={setActiveTab} showWallet={false} />
       </div>
     </div>
   );

@@ -22,14 +22,29 @@ export default {
   theme: {
   	extend: {
   		colors: {
-  			// Main theme color - change this to update the entire app's color scheme
-  			primary: "#8b5cf6", // Main brand color
-  			"primary-light": "#a78bfa", // For hover states
-  			"primary-dark": "#7c3aed", // For active states
+  			// Professional tech theme colors - Red, Blue, Yellow
+  			primary: "#EF4444", // Red - main brand color
+  			"primary-light": "#F87171", // Light red for hover states
+  			"primary-dark": "#DC2626", // Dark red for active states
   			
-  			// Secondary colors for backgrounds and text
-  			secondary: "#f8fafc", // Light backgrounds
-  			"secondary-dark": "#334155", // Dark backgrounds
+  			// Professional blue colors
+  			blue: {
+  				DEFAULT: "#3B82F6", // Professional blue
+  				light: "#60A5FA", // Light blue
+  				dark: "#2563EB", // Dark blue
+  				darker: "#1E40AF", // Darker blue
+  			},
+  			
+  			// Professional yellow colors
+  			yellow: {
+  				DEFAULT: "#FBBF24", // Professional yellow
+  				light: "#FCD34D", // Light yellow
+  				dark: "#F59E0B", // Dark yellow
+  			},
+  			
+  			// Secondary colors
+  			secondary: "#F3F4F6", // Light gray background
+  			"secondary-dark": "#1F2937", // Dark gray for dark mode
   			
   			// Legacy CSS variables for backward compatibility
   			background: 'var(--background)',

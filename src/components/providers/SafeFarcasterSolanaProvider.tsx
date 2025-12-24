@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from '@farcaster/miniapp-sdk';
 
@@ -43,26 +43,36 @@ export function SafeFarcasterSolanaProvider({ endpoint, children }: SafeFarcaste
     };
   }, [isClient]);
 
-  useEffect(() => {
+  // Suprimir errores conocidos de Solana provider de manera segura
+  useLayoutEffect(() => {
+    if (!isClient) return;
+    
+    const originalError = console.error;
     let errorShown = false;
-    const origError = console.error;
-    console.error = (...args) => {
+    
+    // Interceptar console.error de manera segura
+    console.error = (...args: any[]) => {
+      const errorMessage = args[0]?.toString() || '';
+      
+      // Suprimir errores conocidos relacionados con Solana provider y useInsertionEffect
       if (
-        typeof args[0] === "string" &&
-        args[0].includes("WalletConnectionError: could not get Solana provider")
+        errorMessage.includes("WalletConnectionError: could not get Solana provider") ||
+        errorMessage.includes("useInsertionEffect must not schedule updates") ||
+        errorMessage.includes("Cross-Origin-Opener-Policy") ||
+        errorMessage.includes("HTTP error! status: 404")
       ) {
-        if (!errorShown) {
-          origError(...args);
-          errorShown = true;
-        }
+        // Suprimir estos errores conocidos que no afectan la funcionalidad
         return;
       }
-      origError(...args);
+      
+      // Pasar otros errores normalmente
+      originalError.apply(console, args);
     };
+    
     return () => {
-      console.error = origError;
+      console.error = originalError;
     };
-  }, []);
+  }, [isClient]);
 
   if (!isClient || !checked) {
     return null;
