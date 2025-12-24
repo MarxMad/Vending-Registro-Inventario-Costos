@@ -11,7 +11,7 @@ interface FooterProps {
   showWallet?: boolean;
 }
 
-export const Footer: React.FC<FooterProps> = ({ activeTab, setActiveTab, showWallet = false }) => {
+export const Footer: React.FC<FooterProps> = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: Tab.Dashboard, label: "Dashboard", icon: LayoutDashboard },
     { id: Tab.Maquinas, label: "Máquinas", icon: Package },

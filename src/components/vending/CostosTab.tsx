@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import type { CostoInsumo, TipoMaquina } from "~/lib/types";
-import { Receipt, Plus, DollarSign, Package, TrendingDown, X } from "lucide-react";
+import { Receipt, Plus, Package, X } from "lucide-react";
 
 interface CostosTabProps {
   userId: string;
@@ -19,6 +19,7 @@ export function CostosTab({ userId }: CostosTabProps) {
 
   useEffect(() => {
     loadCostos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, filtroTipo]);
 
   const loadCostos = async () => {
@@ -189,7 +190,7 @@ interface CostoFormProps {
 }
 
 function CostoForm({ userId, onClose, onSave }: CostoFormProps) {
-  const [maquinas, setMaquinas] = useState<any[]>([]);
+  const [_maquinas, setMaquinas] = useState<any[]>([]);
   const [productosDisponibles, setProductosDisponibles] = useState<Array<{id: string, nombre: string, maquinaId: string, compartimentoId: string}>>([]);
   
   const [formData, setFormData] = useState({
@@ -253,6 +254,7 @@ function CostoForm({ userId, onClose, onSave }: CostoFormProps) {
 
   useEffect(() => {
     loadMaquinas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, formData.tipoMaquina]);
 
   const loadMaquinas = async () => {

@@ -13,7 +13,7 @@ interface MaquinaDetalleProps {
   onUpdate: () => void;
 }
 
-export function MaquinaDetalle({ userId, maquina, onClose, onUpdate }: MaquinaDetalleProps) {
+export function MaquinaDetalle({ maquina, onClose, onUpdate }: MaquinaDetalleProps) {
 
   const handleActualizarStock = async (compartimentoId: string, cantidad: number) => {
     try {
@@ -148,7 +148,7 @@ export function MaquinaDetalle({ userId, maquina, onClose, onUpdate }: MaquinaDe
                   </div>
                   {!comp.producto && comp.tipoProducto && (
                     <p className="text-xs text-yellow-600 mt-2">
-                      💡 Los costos de productos se registran en la pestaña "Costos"
+                      💡 Los costos de productos se registran en la pestaña &quot;Costos&quot;
                     </p>
                   )}
                 </div>
@@ -165,7 +165,7 @@ export function MaquinaDetalle({ userId, maquina, onClose, onUpdate }: MaquinaDe
                     </p>
                   )}
                   <p className="text-xs text-yellow-600 mt-2">
-                    💡 Los costos de productos se registran en la pestaña "Costos"
+                    💡 Los costos de productos se registran en la pestaña &quot;Costos&quot;
                   </p>
                 </div>
               )}

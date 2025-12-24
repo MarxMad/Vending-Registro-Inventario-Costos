@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { useMiniApp } from "@neynar/react";
 import { UserButton } from "@clerk/nextjs";
@@ -14,7 +13,7 @@ type HeaderProps = {
   clerkUser?: User | null;
 };
 
-export function Header({ neynarUser, clerkUser }: HeaderProps) {
+export function Header({ clerkUser }: HeaderProps) {
   const { context } = useMiniApp();
 
   return (

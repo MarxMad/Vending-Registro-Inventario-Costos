@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "~/components/ui/Button";
-import type { Maquina, NotificacionRecoleccion, Rentabilidad, Recoleccion } from "~/lib/types";
-import { AlertTriangle, TrendingUp, DollarSign, Package, Bell, Sparkles, Calendar, Clock } from "lucide-react";
+import type { Maquina, NotificacionRecoleccion, Recoleccion } from "~/lib/types";
+import { AlertTriangle, TrendingUp, DollarSign, Package, Bell, Clock } from "lucide-react";
 
 interface DashboardProps {
   userId: string;
@@ -52,7 +51,7 @@ export function Dashboard({ userId }: DashboardProps) {
   });
   const [notificaciones, setNotificaciones] = useState<NotificacionRecoleccion[]>([]);
   const [maquinas, setMaquinas] = useState<Maquina[]>([]);
-  const [recolecciones, setRecolecciones] = useState<Recoleccion[]>([]);
+  const [_recolecciones, setRecolecciones] = useState<Recoleccion[]>([]);
   const [ingresosPorDia, setIngresosPorDia] = useState<Array<{ fecha: string; ingresos: number }>>(inicializarIngresosPorDia());
   const [loading, setLoading] = useState(true);
 

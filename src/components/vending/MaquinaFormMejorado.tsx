@@ -18,11 +18,9 @@ const COLORES = [
   "Rojo", "Azul", "Amarillo", "Verde", "Naranja", "Rosa", "Morado", "Negro", "Blanco", "Gris"
 ];
 
-const PRODUCTOS_PELUCHERA: string[] = ["peluches"];
-
 const PRODUCTOS_CHICLERA: ProductoChiclera[] = ["chicles", "rocabola", "pelotas", "capsulas", "pokebolas"];
 
-export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: MaquinaFormMejoradoProps) {
+export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMejoradoProps) {
   const [formData, setFormData] = useState({
     nombre: maquina?.nombre || "",
     color: maquina?.color || "",

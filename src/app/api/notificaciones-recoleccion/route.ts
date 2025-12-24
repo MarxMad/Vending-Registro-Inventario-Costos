@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getMaquinasParaRecoleccion } from '~/lib/vendingStorage';
 import { sendNeynarMiniAppNotification } from '~/lib/neynar';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth();
     

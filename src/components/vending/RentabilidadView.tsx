@@ -17,6 +17,7 @@ export function RentabilidadView({ userId }: RentabilidadViewProps) {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, periodo]);
 
   const loadData = async () => {

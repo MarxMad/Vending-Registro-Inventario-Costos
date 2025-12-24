@@ -48,7 +48,6 @@ export function SafeFarcasterSolanaProvider({ endpoint, children }: SafeFarcaste
     if (!isClient) return;
     
     const originalError = console.error;
-    let errorShown = false;
     
     // Interceptar console.error de manera segura
     console.error = (...args: any[]) => {

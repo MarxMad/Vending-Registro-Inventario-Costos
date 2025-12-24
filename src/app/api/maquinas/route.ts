@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getMaquinas, saveMaquina, deleteMaquina } from '~/lib/vendingStorage';
 import { z } from 'zod';
-import type { Maquina, TipoMaquina, TipoChiclera } from '~/lib/types';
+import type { Maquina } from '~/lib/types';
 
 // Schema de validación para crear/actualizar máquina
 const maquinaSchema = z.object({
@@ -45,7 +45,7 @@ const maquinaSchema = z.object({
   imagen: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth();
     
