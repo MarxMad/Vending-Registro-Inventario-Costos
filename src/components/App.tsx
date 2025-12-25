@@ -76,13 +76,18 @@ export default function App(
   const { user: neynarUser } = useNeynarUser(context || undefined);
 
   // --- Effects ---
+  // Prioridad: Si hay FID de Farcaster, usarlo. Si no, usar Clerk.
   useEffect(() => {
-    if (user?.id) {
+    // Si hay FID de Farcaster, usarlo como userId (omitir login)
+    if (context?.user?.fid) {
+      setAuthenticatedUserId(`fid-${context.user.fid}`);
+    } else if (user?.id) {
+      // Si no hay FID pero hay usuario de Clerk, usar Clerk
       setAuthenticatedUserId(user.id);
     } else {
       setAuthenticatedUserId(null);
     }
-  }, [user]);
+  }, [context?.user?.fid, user?.id]);
 
   useEffect(() => {
     if (isSDKLoaded && authenticatedUserId) {
@@ -92,16 +97,27 @@ export default function App(
 
   // Llamar a sdk.actions.ready() cuando la app esté completamente cargada
   useEffect(() => {
-    if (isSDKLoaded && isClerkLoaded && authenticatedUserId && user) {
-      // La app está lista, notificar al SDK
-      sdk.actions.ready().catch((error) => {
-        console.error('Error calling sdk.actions.ready():', error);
-      });
+    if (isSDKLoaded && authenticatedUserId) {
+      // Si hay FID, no necesitamos esperar a Clerk
+      const shouldCallReady = context?.user?.fid 
+        ? isSDKLoaded && authenticatedUserId
+        : isSDKLoaded && isClerkLoaded && authenticatedUserId && user;
+      
+      if (shouldCallReady) {
+        // La app está lista, notificar al SDK
+        sdk.actions.ready().catch((error) => {
+          console.error('Error calling sdk.actions.ready():', error);
+        });
+      }
     }
-  }, [isSDKLoaded, isClerkLoaded, authenticatedUserId, user]);
+  }, [isSDKLoaded, isClerkLoaded, authenticatedUserId, user, context?.user?.fid]);
 
   // --- Early Returns ---
-  if (!isSDKLoaded || !isClerkLoaded) {
+  // Si hay FID, no necesitamos esperar a Clerk
+  const hasFid = !!context?.user?.fid;
+  const needsClerk = !hasFid;
+  
+  if (!isSDKLoaded || (needsClerk && !isClerkLoaded)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -112,8 +128,21 @@ export default function App(
     );
   }
 
-  // Mostrar pantalla de login si no está autenticado
-  if (!authenticatedUserId || !user) {
+  // Mostrar pantalla de login solo si no hay FID y no hay usuario de Clerk
+  if (!authenticatedUserId) {
+    // Si hay FID, no mostrar login
+    if (hasFid) {
+      // Esperar a que se establezca el userId
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="spinner h-8 w-8 mx-auto mb-4"></div>
+            <p>Cargando...</p>
+          </div>
+        </div>
+      );
+    }
+    // Si no hay FID, mostrar login de Clerk
     return <LoginScreen onLogin={(userId) => setAuthenticatedUserId(userId)} />;
   }
 

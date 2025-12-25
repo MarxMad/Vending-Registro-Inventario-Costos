@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getUserId } from '~/lib/getUserId';
 import { getMaquinas, getRecolecciones, getCostos } from '~/lib/vendingStorage';
 import type { Rentabilidad } from '~/lib/types';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(

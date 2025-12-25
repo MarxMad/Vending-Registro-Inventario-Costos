@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Maquina, NotificacionRecoleccion, Recoleccion } from "~/lib/types";
 import { AlertTriangle, TrendingUp, DollarSign, Package, Bell, Clock } from "lucide-react";
+import { fetchWithUserId } from "~/lib/apiClient";
 
 interface DashboardProps {
   userId: string;
@@ -75,7 +76,7 @@ export function Dashboard({ userId }: DashboardProps) {
     try {
       let maquinasData: Maquina[] = [];
       try {
-        const maquinasRes = await fetch(`/api/maquinas`);
+        const maquinasRes = await fetchWithUserId(`/api/maquinas`, { userId });
         if (maquinasRes.ok) {
           const data = await maquinasRes.json();
           maquinasData = data.maquinas || [];
@@ -87,7 +88,7 @@ export function Dashboard({ userId }: DashboardProps) {
 
       let notificacionesData: NotificacionRecoleccion[] = [];
       try {
-        const notifRes = await fetch(`/api/notificaciones-recoleccion`);
+        const notifRes = await fetchWithUserId(`/api/notificaciones-recoleccion`, { userId });
         if (notifRes.ok) {
           const data = await notifRes.json();
           notificacionesData = data.notificaciones || [];
@@ -100,7 +101,7 @@ export function Dashboard({ userId }: DashboardProps) {
       let ingresosMes = 0;
       let recoleccionesData: Recoleccion[] = [];
       try {
-        const recoleccionesRes = await fetch(`/api/recolecciones`);
+        const recoleccionesRes = await fetchWithUserId(`/api/recolecciones`, { userId });
         if (recoleccionesRes.ok) {
           const data = await recoleccionesRes.json();
           recoleccionesData = data.recolecciones || [];

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { getMaquinas, saveMaquina, deleteMaquina } from '~/lib/vendingStorage';
+import { getUserId } from '~/lib/getUserId';
 import { z } from 'zod';
 import type { Maquina, Compartimento, ProductoChiclera, ProductoPeluchera } from '~/lib/types';
 
@@ -46,9 +46,9 @@ const maquinaSchema = z.object({
   imagen: z.string().optional(),
 });
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -70,7 +70,7 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -214,7 +214,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(

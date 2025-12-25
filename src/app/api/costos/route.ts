@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getUserId } from '~/lib/getUserId';
 import { getCostos, saveCosto } from '~/lib/vendingStorage';
 import { z } from 'zod';
 import type { CostoInsumo, TipoMaquina } from '~/lib/types';
@@ -24,7 +24,7 @@ const costoSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getUserId(request);
     
     if (!userId) {
       return NextResponse.json(
