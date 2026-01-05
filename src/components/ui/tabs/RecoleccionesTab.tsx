@@ -22,6 +22,7 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, filtroUbicacion]);
 
   const loadData = async () => {

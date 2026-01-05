@@ -371,7 +371,6 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
           <select
             value={formData.tipo}
             disabled={isSaving}
-            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             onChange={(e) => {
               const nuevoTipo = e.target.value as TipoMaquina;
               if (nuevoTipo === "peluchera") {
@@ -391,7 +390,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                 });
               }
             }}
-            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             required
           >
             <option value="peluchera">Peluchera</option>

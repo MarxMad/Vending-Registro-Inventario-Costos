@@ -23,6 +23,7 @@ export function MaquinasList({ userId }: MaquinasListProps) {
 
   useEffect(() => {
     loadMaquinas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const loadMaquinas = async () => {

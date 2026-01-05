@@ -58,6 +58,7 @@ export function Dashboard({ userId }: DashboardProps) {
 
   useEffect(() => {
     loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Recargar cuando el componente se monta o se vuelve visible
@@ -69,6 +70,7 @@ export function Dashboard({ userId }: DashboardProps) {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const loadDashboard = async () => {
