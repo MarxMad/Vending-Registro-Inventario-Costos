@@ -44,6 +44,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(maquina?.imagen || null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Inicializar productos si es una máquina nueva
   useEffect(() => {
@@ -146,6 +147,15 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevenir múltiples envíos
+    if (isSaving) {
+      console.log('⚠️  Ya se está guardando, ignorando envío duplicado');
+      return;
+    }
+    
+    setIsSaving(true);
+    console.log('💾 Iniciando guardado de máquina...');
+    
     try {
       // Crear compartimentos según los productos seleccionados
       const compartimentos = formData.productos.map((producto, index) => ({
@@ -190,16 +200,21 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
       });
 
       if (response.ok) {
-        onSave();
+        console.log('✅ Máquina guardada exitosamente');
         // Pequeño delay para asegurar que el servidor haya guardado
         await new Promise(resolve => setTimeout(resolve, 100));
+        onSave();
+        // No resetear isSaving aquí porque onSave() cierra el formulario
       } else {
         const error = await response.json();
+        console.error('❌ Error en respuesta:', error);
         alert(`Error: ${error.error}`);
+        setIsSaving(false); // Permitir reintentar en caso de error
       }
     } catch (error) {
-      console.error("Error guardando máquina:", error);
-      alert("Error al guardar la máquina");
+      console.error("❌ Error guardando máquina:", error);
+      alert("Error al guardar la máquina. Por favor intenta de nuevo.");
+      setIsSaving(false); // Permitir reintentar en caso de error
     }
   };
 
@@ -211,7 +226,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl p-6 shadow-xl border-2 border-yellow-400"
+      className="rounded-2xl p-6 shadow-xl border-2 border-yellow-400 relative"
       style={{
         background: "linear-gradient(135deg, #FFFFFF 0%, #FEF3C7 100%)",
       }}
@@ -222,13 +237,35 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
         </h3>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-red-100 rounded-full transition-colors"
+          disabled={isSaving}
+          className="p-2 hover:bg-red-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <X className="w-5 h-5 text-red-600" />
         </button>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Overlay de loading */}
+      {isSaving && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center rounded-2xl">
+          <div className="bg-white rounded-xl p-6 shadow-xl border-2 border-blue-500">
+            <div className="flex flex-col items-center gap-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+              />
+              <p className="text-lg font-semibold text-gray-800">
+                Guardando máquina...
+              </p>
+              <p className="text-sm text-gray-600">
+                Por favor espera, no cierres esta ventana
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Nombre */}
         <div>
           <label className="block text-sm font-bold mb-2 text-gray-800">Nombre *</label>
@@ -236,6 +273,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             required
+            disabled={isSaving}
             className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
           />
         </div>
@@ -248,6 +286,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             type="file"
             accept="image/*"
             onChange={handleImageChange}
+            disabled={isSaving}
             className="hidden"
             id="imagen-maquina"
           />
@@ -269,7 +308,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  disabled={isSaving}
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Eliminar imagen"
                 >
                   <X className="w-4 h-4" />
@@ -281,7 +321,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             ) : (
               <label
                 htmlFor="imagen-maquina"
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-yellow-300 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors"
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-yellow-300 rounded-xl transition-colors ${isSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-50'}`}
               >
                 <Camera className="w-8 h-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-600">Haz clic para subir una foto</span>
@@ -298,6 +338,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                   variant="outline"
                   size="sm"
                   className="w-full"
+                  disabled={isSaving}
                 >
                   <ImageIcon className="w-4 h-4 mr-2" />
                   Seleccionar Imagen
@@ -313,7 +354,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
           <select
             value={formData.color}
             onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+            disabled={isSaving}
+            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             required
           >
             <option value="">Selecciona un color</option>
@@ -328,6 +370,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
           <label className="block text-sm font-bold mb-2 text-gray-800">Tipo *</label>
           <select
             value={formData.tipo}
+            disabled={isSaving}
+            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             onChange={(e) => {
               const nuevoTipo = e.target.value as TipoMaquina;
               if (nuevoTipo === "peluchera") {
@@ -371,7 +415,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                   tiposProductoChiclera: Array(cantidad).fill("granel") as TipoProductoChiclera[]
                 });
               }}
-              className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+              disabled={isSaving}
+              className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               required
             >
               <option value="individual">Individual</option>
@@ -391,6 +436,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
               value={formData.ubicacion.direccion}
               onChange={(e) => handleUbicacionChange("direccion", e.target.value)}
               required
+              disabled={isSaving}
               className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
             />
             <div className="flex items-center gap-2">
@@ -399,6 +445,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                 placeholder="URL de Google Maps (opcional)"
                 value={formData.ubicacion.googleMapsUrl || ""}
                 onChange={(e) => handleGoogleMapsUrl(e.target.value)}
+                disabled={isSaving}
                 className="flex-1 border-2 border-yellow-300 focus:border-red-500"
               />
             </div>
@@ -426,7 +473,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                   <select
                     value={formData.productos[0] || ""}
                     onChange={(e) => handleProductoChange(0, e.target.value)}
-                    className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+                    disabled={isSaving}
+                    className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   >
                     <option value="peluches">Peluches</option>
@@ -446,6 +494,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                     }}
                     placeholder="0.00"
                     required
+                    disabled={isSaving}
                     className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
                   />
                 </div>
@@ -462,7 +511,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                       <select
                         value={formData.productos[index] || ""}
                         onChange={(e) => handleProductoChange(index, e.target.value)}
-                        className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+                        disabled={isSaving}
+                        className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         required
                       >
                         <option value="">Selecciona producto</option>
@@ -478,7 +528,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                       <select
                         value={formData.tiposProductoChiclera[index] || "granel"}
                         onChange={(e) => handleTipoProductoChange(index, e.target.value as TipoProductoChiclera)}
-                        className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+                        disabled={isSaving}
+                        className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         required
                       >
                         <option value="granel">Granel</option>
@@ -499,6 +550,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
                         }}
                         placeholder="0.00"
                         required
+                        disabled={isSaving}
                         className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
                       />
                     </div>
@@ -517,6 +569,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             value={formData.diasRecoleccionEstimados}
             onChange={(e) => setFormData({ ...formData, diasRecoleccionEstimados: parseInt(e.target.value) || 7 })}
             required
+            disabled={isSaving}
             className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
           />
         </div>
@@ -527,17 +580,29 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
           <textarea
             value={formData.notas}
             onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-            className="w-full rounded-xl border-2 border-yellow-300 bg-white text-black px-4 py-3 focus:border-red-500 focus:outline-none"
+            disabled={isSaving}
+            className="w-full rounded-xl border-2 border-yellow-300 bg-white text-black px-4 py-3 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             rows={3}
           />
         </div>
 
         <div className="flex gap-3 pt-4">
-          <Button type="button" onClick={onClose} variant="outline" className="flex-1">
+          <Button 
+            type="button" 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+            disabled={isSaving}
+          >
             Cancelar
           </Button>
-          <Button type="submit" className="flex-1">
-            Guardar
+          <Button 
+            type="submit" 
+            className="flex-1"
+            isLoading={isSaving}
+            disabled={isSaving}
+          >
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </form>

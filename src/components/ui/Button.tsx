@@ -50,10 +50,11 @@ export function Button({
 
   return (
     <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={`rounded-xl transition-all ${sizeClasses[size]} ${className}`}
+      whileHover={!props.disabled ? { scale: 1.05 } : {}}
+      whileTap={!props.disabled ? { scale: 0.95 } : {}}
+      className={`rounded-xl transition-all ${sizeClasses[size]} ${className} ${props.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       style={variantStyles[variant]}
+      disabled={props.disabled || isLoading}
       {...motionProps}
     >
       {isLoading ? (
