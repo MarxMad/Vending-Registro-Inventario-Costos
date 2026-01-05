@@ -163,6 +163,30 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
               <p className="text-sm font-semibold text-gray-800 mb-1">Ingresos Totales</p>
               <p className="text-2xl font-bold text-yellow-600">${totalIngresos.toFixed(2)}</p>
             </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="rounded-xl p-4 shadow-lg border-2 border-green-200 bg-white"
+              style={{
+                boxShadow: "0 4px 15px rgba(34, 197, 94, 0.15)",
+              }}
+            >
+              <p className="text-sm font-semibold text-gray-800 mb-1">Ingresos Netos</p>
+              <p className="text-2xl font-bold text-green-600">
+                ${recoleccionesFiltradas.reduce((sum, r) => sum + (r.ingresosNetos ?? r.ingresos), 0).toFixed(2)}
+              </p>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="rounded-xl p-4 shadow-lg border-2 border-purple-200 bg-white"
+              style={{
+                boxShadow: "0 4px 15px rgba(168, 85, 247, 0.15)",
+              }}
+            >
+              <p className="text-sm font-semibold text-gray-800 mb-1">Promedio por Recolección</p>
+              <p className="text-2xl font-bold text-purple-600">
+                ${(totalIngresos / recoleccionesFiltradas.length).toFixed(2)}
+              </p>
+            </motion.div>
           </div>
         )}
 
@@ -173,40 +197,100 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
             <p>No hay recolecciones registradas</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {recoleccionesFiltradas.map((recoleccion) => (
-              <motion.div
-                key={recoleccion.id}
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                whileHover={{ scale: 1.02 }}
-                className="rounded-xl p-4 shadow-lg border-2 border-gray-200 bg-white"
-                style={{
-                  boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
-                }}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-bold text-gray-800">{getMaquinaNombre(recoleccion.maquinaId)}</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(recoleccion.fecha).toLocaleDateString("es-ES", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
+          <div className="space-y-6">
+            {/* Agrupar recolecciones por fecha */}
+            {Object.entries(
+              recoleccionesFiltradas.reduce((acc, recoleccion) => {
+                const fechaKey = new Date(recoleccion.fecha).toISOString().split('T')[0]; // YYYY-MM-DD para ordenar
+                const fechaDisplay = new Date(recoleccion.fecha).toLocaleDateString("es-ES", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                });
+                if (!acc[fechaKey]) {
+                  acc[fechaKey] = { fechaDisplay, recolecciones: [] };
+                }
+                acc[fechaKey].recolecciones.push(recoleccion);
+                return acc;
+              }, {} as Record<string, { fechaDisplay: string; recolecciones: Recoleccion[] }>)
+            )
+              .sort(([a], [b]) => b.localeCompare(a)) // Ordenar por fecha (más reciente primero)
+              .map(([fechaKey, { fechaDisplay, recolecciones: recoleccionesDelDia }]) => (
+                <div key={fechaKey} className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-800">{fechaDisplay}</h3>
+                    <span className="px-2 py-1 bg-blue-100 rounded-full text-xs font-semibold text-blue-800">
+                      {recoleccionesDelDia.length} {recoleccionesDelDia.length === 1 ? 'recolección' : 'recolecciones'}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-green-600">
-                      ${recoleccion.ingresos.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+                  {recoleccionesDelDia.map((recoleccion) => {
+                    const maquina = maquinas.find(m => m.id === recoleccion.maquinaId);
+                    return (
+                <motion.div
+                  key={recoleccion.id}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="rounded-xl p-4 shadow-lg border-2 border-gray-200 bg-white"
+                  style={{
+                    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <div className="flex gap-4">
+                    {/* Imagen de la máquina */}
+                    {maquina?.imagen && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={maquina.imagen}
+                          alt={maquina.nombre}
+                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800">{getMaquinaNombre(recoleccion.maquinaId)}</h3>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              {new Date(recoleccion.fecha).toLocaleDateString("es-ES", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          {maquina && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                              <MapPin className="w-3 h-3" />
+                              <span>{typeof maquina.ubicacion === 'string' ? maquina.ubicacion : maquina.ubicacion.direccion}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500 mb-1">Ingresos Totales</p>
+                          <p className="text-xl font-bold text-green-600">
+                            ${recoleccion.ingresos.toFixed(2)}
+                          </p>
+                          {recoleccion.comisionLocal && recoleccion.comisionLocal > 0 && (
+                            <>
+                              <p className="text-xs text-gray-500 mt-1">Comisión ({recoleccion.comisionLocal}%)</p>
+                              <p className="text-sm font-semibold text-red-600">
+                                -${(recoleccion.ingresos * (recoleccion.comisionLocal / 100)).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">Ingresos Netos</p>
+                              <p className="text-lg font-bold text-blue-600">
+                                ${recoleccion.ingresosNetos.toFixed(2)}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
 
                 {recoleccion.productosVendidos.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-yellow-300">
@@ -244,13 +328,18 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
                   </div>
                 )}
 
-                {recoleccion.notas && (
-                  <div className="mt-2 pt-2 border-t border-yellow-300">
-                    <p className="text-xs text-gray-600 italic">{recoleccion.notas}</p>
+                      {recoleccion.notas && (
+                        <div className="mt-2 pt-2 border-t border-yellow-300">
+                          <p className="text-xs text-gray-600 italic">{recoleccion.notas}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </motion.div>
-            ))}
+                </motion.div>
+                    );
+                  })}
+                </div>
+              ))}
           </div>
         )}
       </div>
@@ -337,10 +426,25 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
                         whileTap={{ scale: 0.98 }}
                         className="w-full p-4 rounded-xl border-2 border-yellow-400 bg-white hover:bg-yellow-50 transition-colors text-left"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex gap-4 items-center">
+                          {/* Imagen de la máquina */}
+                          {maquina.imagen ? (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={maquina.imagen}
+                                alt={maquina.nombre}
+                                className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                          
                           <div className="flex-1">
                             <h4 className="font-bold text-gray-800">{maquina.nombre}</h4>
-                            <div className="flex items-center gap-3 mt-1">
+                            <div className="flex items-center gap-3 mt-1 flex-wrap">
                               <span className={`px-2 py-1 rounded text-xs font-semibold ${
                                 maquina.tipo === "peluchera" 
                                   ? "bg-yellow-200 text-yellow-800" 

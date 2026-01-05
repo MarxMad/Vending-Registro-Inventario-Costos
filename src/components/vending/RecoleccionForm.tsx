@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { fetchWithUserId } from "~/lib/apiClient";
 import type { Maquina, Recoleccion } from "~/lib/types";
-import { DollarSign, X } from "lucide-react";
+import { DollarSign, X, Package, MapPin } from "lucide-react";
 
 interface RecoleccionFormProps {
   userId: string;
@@ -235,13 +235,42 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
         </button>
       </div>
 
-      <div>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Máquina: <span className="font-semibold">{maquina.nombre}</span>
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Ubicación: {typeof maquina.ubicacion === 'string' ? maquina.ubicacion : maquina.ubicacion.direccion}
-        </p>
+      {/* Información de la máquina con imagen */}
+      <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+        <div className="flex gap-4 items-center">
+          {maquina.imagen ? (
+            <div className="flex-shrink-0">
+              <img
+                src={maquina.imagen}
+                alt={maquina.nombre}
+                className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300"
+              />
+            </div>
+          ) : (
+            <div className="flex-shrink-0 w-24 h-24 bg-gray-200 rounded-lg border-2 border-gray-300 flex items-center justify-center">
+              <Package className="w-10 h-10 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1">
+            <h4 className="font-bold text-lg text-gray-900 dark:text-white">{maquina.nombre}</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              {typeof maquina.ubicacion === 'string' ? maquina.ubicacion : maquina.ubicacion.direccion}
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                maquina.tipo === "peluchera" 
+                  ? "bg-yellow-200 text-yellow-800" 
+                  : "bg-orange-200 text-orange-800"
+              }`}>
+                {maquina.tipo === "peluchera" 
+                  ? "Peluchera" 
+                  : `Chiclera ${maquina.tipoChiclera === 'doble' ? 'Doble' : maquina.tipoChiclera === 'triple' ? 'Triple' : 'Individual'}`
+                }
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
