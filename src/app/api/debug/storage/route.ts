@@ -25,20 +25,34 @@ export async function GET(request: NextRequest) {
       const recolecciones = await getRecolecciones(userId);
       const costos = await getCostos(userId);
       
+      // Verificar que las recolecciones tengan máquinas válidas
+      const maquinasIds = new Set(maquinas.map(m => m.id));
+      const recoleccionesSinMaquina = recolecciones.filter(r => !maquinasIds.has(r.maquinaId));
+      
       dataCheck = {
         userId,
         maquinasCount: maquinas.length,
         recoleccionesCount: recolecciones.length,
         costosCount: costos.length,
+        recoleccionesSinMaquina: recoleccionesSinMaquina.length,
         sampleKeys: {
           maquinasKey: `${APP_NAME}:maquinas:${userId}`,
           recoleccionesKey: `${APP_NAME}:recolecciones:${userId}`,
           costosKey: `${APP_NAME}:costos:${userId}`,
         },
+        sampleMaquinas: maquinas.slice(0, 3).map(m => ({ id: m.id, nombre: m.nombre })),
+        sampleRecolecciones: recolecciones.slice(0, 3).map(r => ({ 
+          id: r.id, 
+          maquinaId: r.maquinaId, 
+          fecha: r.fecha,
+          ingresos: r.ingresos,
+          ingresosNetos: r.ingresosNetos 
+        })),
       };
     } catch (error) {
       dataCheck = {
         error: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : undefined,
       };
     }
   }

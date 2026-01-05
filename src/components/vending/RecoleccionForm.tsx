@@ -37,10 +37,17 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   });
   const [notas, setNotas] = useState("");
+  const [comisionLocal, setComisionLocal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
 
   const calcularIngresosTotales = () => {
     return productosVendidos.reduce((sum, p) => sum + p.ingresos, 0);
+  };
+
+  const calcularIngresosNetos = () => {
+    const ingresosTotales = calcularIngresosTotales();
+    const comisionMonto = ingresosTotales * (comisionLocal / 100);
+    return ingresosTotales - comisionMonto;
   };
 
   const handleAgregarProducto = (compartimentoId: string) => {
@@ -57,40 +64,27 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
     // Obtener precio: primero precioVenta, luego producto.precio, luego 0
     const precio = compartimento.precioVenta || compartimento.producto?.precio || 0;
 
-    // Preguntar si quiere ingresar cantidad o ingresos
-    const modo = precio > 0 
-      ? prompt(`¿Cómo quieres registrar la venta de ${nombreProducto}?\n1. Ingresar cantidad de piezas\n2. Ingresar ingresos totales\n\nEscribe "1" o "2":`)
-      : "1";
+    // Solo permitir ingresar ingresos totales
+    if (precio <= 0) {
+      alert("Este producto no tiene precio configurado. Configura el precio primero.");
+      return;
+    }
+
+    const ingresosInput = prompt(`Ingresos totales de ${nombreProducto} (precio unitario: $${precio}):`);
+    if (!ingresosInput) return;
+
+    const ingresos = parseFloat(ingresosInput) || 0;
+    if (ingresos <= 0) {
+      alert("Los ingresos deben ser mayores a 0");
+      return;
+    }
+
+    // Calcular cantidad: Ingreso / precio de venta = piezas vendidas
+    const cantidadNum = Math.round((ingresos / precio) * 100) / 100; // Redondear a 2 decimales
     
-    if (!modo) return;
-
-    let cantidadNum = 0;
-    let ingresos = 0;
-
-    if (modo === "2" && precio > 0) {
-      // Modo ingresos: calcular cantidad automáticamente
-      const ingresosInput = prompt(`Ingresos totales de ${nombreProducto} (precio unitario: $${precio}):`);
-      if (!ingresosInput) return;
-
-      ingresos = parseFloat(ingresosInput) || 0;
-      if (ingresos <= 0) return;
-
-      // Calcular cantidad: Ingreso / precio de venta = piezas vendidas
-      cantidadNum = Math.round((ingresos / precio) * 100) / 100; // Redondear a 2 decimales
-      
-      if (cantidadNum <= 0) {
-        alert("Los ingresos deben ser mayores al precio unitario");
-        return;
-      }
-    } else {
-      // Modo cantidad: calcular ingresos
-      const cantidad = prompt(`Cantidad vendida de ${nombreProducto}${precio > 0 ? ` (precio: $${precio})` : ""}:`);
-      if (!cantidad) return;
-
-      cantidadNum = parseFloat(cantidad) || 0;
-      if (cantidadNum <= 0) return;
-
-      ingresos = precio > 0 ? cantidadNum * precio : 0;
+    if (cantidadNum <= 0) {
+      alert("Los ingresos deben ser mayores al precio unitario");
+      return;
     }
 
     const productoId = compartimento.producto?.id || compartimento.id;
@@ -156,10 +150,15 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
       // Convertir fecha del input a ISO string
       const fechaISO = new Date(fecha).toISOString();
       
+      const ingresosTotales = calcularIngresosTotales();
+      const ingresosNetos = calcularIngresosNetos();
+      
       const recoleccion: Omit<Recoleccion, "id"> = {
         maquinaId: maquina.id,
         fecha: fechaISO,
-        ingresos: calcularIngresosTotales(),
+        ingresos: ingresosTotales,
+        comisionLocal: comisionLocal > 0 ? comisionLocal : undefined,
+        ingresosNetos: ingresosNetos,
         productosVendidos: productosVendidos.map((p) => ({
           compartimentoId: p.compartimentoId,
           cantidad: p.cantidad,
@@ -280,11 +279,6 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
                     {tieneProducto && (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {precio > 0 ? `Precio: $${precio} | ` : ""}Stock: {comp.cantidadActual} / {comp.capacidad}
-                        {precio > 0 && (
-                          <span className="text-xs text-blue-600 ml-2">
-                            (Puedes ingresar ingresos y calcular piezas automáticamente)
-                          </span>
-                        )}
                       </p>
                     )}
                   </div>
@@ -383,6 +377,26 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
           </div>
         </div>
 
+        {/* Comisión del Local */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Comisión del Local (%)
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            value={comisionLocal}
+            onChange={(e) => setComisionLocal(parseFloat(e.target.value) || 0)}
+            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none"
+            placeholder="0"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Porcentaje de comisión que se le da al local (ej: 10 para 10%)
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-1">Notas</label>
           <textarea
@@ -393,11 +407,27 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
           />
         </div>
 
-        <div className="border-t pt-4">
-          <div className="flex justify-between items-center mb-4">
-            <span className="font-bold text-lg">Total Ingresos:</span>
-            <span className="font-bold text-lg text-green-600 dark:text-green-400">
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="font-medium">Ingresos Totales:</span>
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
               ${calcularIngresosTotales().toFixed(2)}
+            </span>
+          </div>
+          {comisionLocal > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-600 dark:text-gray-400">
+                Comisión ({comisionLocal}%):
+              </span>
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                -${(calcularIngresosTotales() * (comisionLocal / 100)).toFixed(2)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t">
+            <span className="font-bold text-lg">Ingresos Netos:</span>
+            <span className="font-bold text-lg text-green-600 dark:text-green-400">
+              ${calcularIngresosNetos().toFixed(2)}
             </span>
           </div>
           {rellenos.length > 0 && (

@@ -56,10 +56,19 @@ function getMaquinaKey(userId: string, maquinaId: string): string {
 export async function getMaquinas(userId: string): Promise<Maquina[]> {
   const key = getMaquinasKey(userId);
   if (redis) {
-    const data = await redis.get<Maquina[]>(key);
-    return data || [];
+    try {
+      const data = await redis.get<Maquina[]>(key);
+      const maquinas = data || [];
+      console.log(`📖 Máquinas leídas de Redis: ${maquinas.length} máquina(s)`);
+      return maquinas;
+    } catch (error) {
+      console.error('❌ Error leyendo máquinas de Redis:', error);
+      throw error;
+    }
   }
-  return (localStore.get(key) as Maquina[]) || [];
+  const maquinas = (localStore.get(key) as Maquina[]) || [];
+  console.warn(`⚠️  Máquinas leídas de memoria: ${maquinas.length} máquina(s)`);
+  return maquinas;
 }
 
 export async function getMaquina(userId: string, maquinaId: string): Promise<Maquina | null> {
@@ -87,7 +96,13 @@ export async function saveMaquina(userId: string, maquina: Maquina): Promise<voi
         maquinas.push(maquina);
       }
       await redis.set(maquinasKey, maquinas);
-      console.log(`✅ Máquina guardada en Redis: ${key}`);
+      console.log(`✅ Máquina guardada en Redis: ${key} (total máquinas: ${maquinas.length})`);
+      
+      // Verificar que se guardó correctamente
+      const verificacion = await redis.get<Maquina[]>(maquinasKey);
+      if (!verificacion || verificacion.length !== maquinas.length) {
+        console.error('⚠️  Advertencia: Los datos guardados no coinciden con lo esperado');
+      }
     } catch (error) {
       console.error('❌ Error guardando en Redis:', error);
       throw error;
@@ -110,17 +125,28 @@ export async function deleteMaquina(userId: string, maquinaId: string): Promise<
   const key = getMaquinaKey(userId, maquinaId);
   const maquinasKey = getMaquinasKey(userId);
   
+  // Eliminar máquina
   if (redis) {
-    await redis.del(key);
-    const maquinas = await getMaquinas(userId);
-    const filtered = maquinas.filter(m => m.id !== maquinaId);
-    await redis.set(maquinasKey, filtered);
+    try {
+      await redis.del(key);
+      const maquinas = await getMaquinas(userId);
+      const filtered = maquinas.filter(m => m.id !== maquinaId);
+      await redis.set(maquinasKey, filtered);
+      console.log(`✅ Máquina eliminada de Redis: ${key}`);
+    } catch (error) {
+      console.error('❌ Error eliminando máquina de Redis:', error);
+      throw error;
+    }
   } else {
     localStore.delete(key);
     const maquinas = (localStore.get(maquinasKey) as Maquina[]) || [];
     const filtered = maquinas.filter(m => m.id !== maquinaId);
     localStore.set(maquinasKey, filtered);
+    console.warn(`⚠️  Máquina eliminada de memoria: ${key}`);
   }
+  
+  // Eliminar todas las recolecciones asociadas a esta máquina
+  await deleteRecoleccionesPorMaquina(userId, maquinaId);
 }
 
 // ========== RECOLECCIONES ==========
@@ -130,9 +156,16 @@ export async function getRecolecciones(userId: string, maquinaId?: string): Prom
   let recolecciones: Recoleccion[] = [];
   
   if (redis) {
-    recolecciones = (await redis.get<Recoleccion[]>(key)) || [];
+    try {
+      recolecciones = (await redis.get<Recoleccion[]>(key)) || [];
+      console.log(`📖 Recolecciones leídas de Redis: ${recolecciones.length} recolección(es)`);
+    } catch (error) {
+      console.error('❌ Error leyendo recolecciones de Redis:', error);
+      throw error;
+    }
   } else {
     recolecciones = (localStore.get(key) as Recoleccion[]) || [];
+    console.warn(`⚠️  Recolecciones leídas de memoria: ${recolecciones.length} recolección(es)`);
   }
   
   if (maquinaId) {
@@ -153,13 +186,24 @@ export async function saveRecoleccion(userId: string, recoleccion: Recoleccion):
     await saveMaquina(userId, maquina);
   }
   
-  // Agregar recolección
-  recolecciones.push(recoleccion);
+  // Si la recolección ya existe (mismo ID), actualizarla; si no, agregarla
+  const index = recolecciones.findIndex(r => r.id === recoleccion.id);
+  if (index >= 0) {
+    recolecciones[index] = recoleccion;
+  } else {
+    recolecciones.push(recoleccion);
+  }
   
   if (redis) {
     try {
       await redis.set(key, recolecciones);
-      console.log(`✅ Recolección guardada en Redis: ${key}`);
+      console.log(`✅ Recolección guardada en Redis: ${key} (total: ${recolecciones.length})`);
+      
+      // Verificar que se guardó correctamente
+      const verificacion = await redis.get<Recoleccion[]>(key);
+      if (!verificacion || verificacion.length !== recolecciones.length) {
+        console.error('⚠️  Advertencia: Los datos guardados no coinciden con lo esperado');
+      }
     } catch (error) {
       console.error('❌ Error guardando recolección en Redis:', error);
       throw error;
@@ -167,6 +211,32 @@ export async function saveRecoleccion(userId: string, recoleccion: Recoleccion):
   } else {
     localStore.set(key, recolecciones);
     console.warn(`⚠️  Recolección guardada en memoria (se perderá al recargar): ${key}`);
+  }
+}
+
+export async function deleteRecoleccionesPorMaquina(userId: string, maquinaId: string): Promise<void> {
+  const key = getRecoleccionesKey(userId);
+  const recolecciones = await getRecolecciones(userId);
+  const recoleccionesFiltradas = recolecciones.filter(r => r.maquinaId !== maquinaId);
+  
+  if (recolecciones.length === recoleccionesFiltradas.length) {
+    // No había recolecciones para eliminar
+    return;
+  }
+  
+  const eliminadas = recolecciones.length - recoleccionesFiltradas.length;
+  
+  if (redis) {
+    try {
+      await redis.set(key, recoleccionesFiltradas);
+      console.log(`✅ ${eliminadas} recolección(es) eliminada(s) de Redis para máquina ${maquinaId}`);
+    } catch (error) {
+      console.error('❌ Error eliminando recolecciones de Redis:', error);
+      throw error;
+    }
+  } else {
+    localStore.set(key, recoleccionesFiltradas);
+    console.warn(`⚠️  ${eliminadas} recolección(es) eliminada(s) de memoria para máquina ${maquinaId}`);
   }
 }
 

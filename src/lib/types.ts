@@ -59,7 +59,9 @@ export interface Recoleccion {
   id: string;
   maquinaId: string;
   fecha: string; // ISO date string
-  ingresos: number; // Total de ingresos en esta recolección
+  ingresos: number; // Total de ingresos en esta recolección (antes de comisión)
+  comisionLocal?: number; // Porcentaje de comisión del local (0-100)
+  ingresosNetos: number; // Ingresos después de descontar comisión
   productosVendidos: {
     compartimentoId: string;
     cantidad: number;

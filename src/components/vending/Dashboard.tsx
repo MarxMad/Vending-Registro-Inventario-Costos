@@ -113,7 +113,8 @@ export function Dashboard({ userId }: DashboardProps) {
           const recoleccionesMes = recoleccionesData.filter(
             (r) => new Date(r.fecha) >= inicioMes
           );
-          ingresosMes = recoleccionesMes.reduce((sum, r) => sum + r.ingresos, 0);
+          // Usar ingresosNetos si está disponible, sino usar ingresos
+          ingresosMes = recoleccionesMes.reduce((sum, r) => sum + (r.ingresosNetos ?? r.ingresos), 0);
 
           // Calcular ingresos por día (últimos 7 días)
           const ultimos7Dias = Array.from({ length: 7 }, (_, i) => {
@@ -126,7 +127,7 @@ export function Dashboard({ userId }: DashboardProps) {
           const ingresosPorDiaData = ultimos7Dias.map((fecha) => {
             const ingresos = recoleccionesData
               .filter((r) => r.fecha.startsWith(fecha))
-              .reduce((sum, r) => sum + r.ingresos, 0);
+              .reduce((sum, r) => sum + (r.ingresosNetos ?? r.ingresos), 0);
             return { fecha, ingresos };
           });
           setIngresosPorDia(ingresosPorDiaData);

@@ -9,6 +9,8 @@ const recoleccionSchema = z.object({
   maquinaId: z.string().min(1),
   fecha: z.string(),
   ingresos: z.number().min(0),
+  comisionLocal: z.number().min(0).max(100).optional(),
+  ingresosNetos: z.number().min(0),
   productosVendidos: z.array(z.object({
     compartimentoId: z.string(),
     cantidad: z.number().min(0),
@@ -69,6 +71,8 @@ export async function POST(request: NextRequest) {
       maquinaId: data.maquinaId,
       fecha: data.fecha,
       ingresos: data.ingresos,
+      comisionLocal: data.comisionLocal,
+      ingresosNetos: data.ingresosNetos,
       productosVendidos: data.productosVendidos,
       costos: data.costos || [],
       notas: data.notas,

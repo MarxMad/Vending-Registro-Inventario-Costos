@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         return fechaRecoleccion >= fechaInicio && fechaRecoleccion <= fechaFin;
       });
       
-      const ingresosTotales = recoleccionesFiltradas.reduce((sum, r) => sum + r.ingresos, 0);
+      // Usar ingresosNetos si está disponible, sino usar ingresos
+      const ingresosTotales = recoleccionesFiltradas.reduce((sum, r) => sum + (r.ingresosNetos ?? r.ingresos), 0);
       
       // Costos de recolección (transporte, etc.)
       const costosRecoleccion = recoleccionesFiltradas.reduce((sum, r) => {
