@@ -101,7 +101,12 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('⚠️  No se seleccionó ningún archivo');
+      return;
+    }
+
+    console.log(`📸 Archivo seleccionado: ${file.name}, tamaño: ${file.size} bytes, tipo: ${file.type}`);
 
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
@@ -118,8 +123,14 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
+      console.log(`✅ Imagen convertida a base64 (longitud: ${base64String.length})`);
       setFormData(prev => ({ ...prev, imagen: base64String }));
       setImagenPreview(base64String);
+      console.log('✅ Preview de imagen actualizado');
+    };
+    reader.onerror = (error) => {
+      console.error('❌ Error leyendo archivo:', error);
+      alert('Error al leer la imagen. Por favor intenta de nuevo.');
     };
     reader.readAsDataURL(file);
   };
@@ -245,16 +256,27 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
               <div className="relative">
                 <img
                   src={imagenPreview}
-                  alt="Vista previa"
+                  alt="Vista previa de la máquina"
                   className="w-full h-48 object-cover rounded-xl border-2 border-yellow-300"
+                  onLoad={() => {
+                    console.log('✅ Preview de imagen cargado correctamente');
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Error cargando preview de imagen:', e);
+                    alert('Error al mostrar la vista previa de la imagen');
+                  }}
                 />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  title="Eliminar imagen"
                 >
                   <X className="w-4 h-4" />
                 </button>
+                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                  Vista previa
+                </div>
               </div>
             ) : (
               <label

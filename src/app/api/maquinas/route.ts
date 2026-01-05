@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
       diasRecoleccionEstimados: data.diasRecoleccionEstimados || 7,
       activa: data.activa ?? true,
       notas: data.notas,
+      imagen: data.imagen || undefined,
     };
     
     await saveMaquina(userId, maquina);
@@ -192,8 +193,10 @@ export async function PUT(request: NextRequest) {
     const maquinaActualizada: Maquina = {
       ...data,
       id: maquina.id,
+      imagen: data.imagen || undefined, // Asegurar que la imagen se preserve
     } as Maquina;
     
+    console.log(`💾 Guardando máquina ${maquinaActualizada.id} con imagen: ${maquinaActualizada.imagen ? `Sí (${maquinaActualizada.imagen.length} chars)` : 'No'}`);
     await saveMaquina(userId, maquinaActualizada);
     
     return NextResponse.json({ maquina: maquinaActualizada });
