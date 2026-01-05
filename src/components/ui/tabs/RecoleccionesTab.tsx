@@ -238,16 +238,35 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
                   }}
                 >
                   <div className="flex gap-4">
-                    {/* Imagen de la máquina */}
-                    {maquina?.imagen && (
-                      <div className="flex-shrink-0">
-                        <img
-                          src={maquina.imagen}
-                          alt={maquina.nombre}
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
-                        />
-                      </div>
-                    )}
+                    {/* Imagen de la máquina - siempre mostrar */}
+                    <div className="flex-shrink-0 relative">
+                      {maquina?.imagen ? (
+                        <>
+                          <img
+                            src={maquina.imagen}
+                            alt={maquina.nombre}
+                            className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                            onError={(e) => {
+                              // Si la imagen falla al cargar, ocultar y mostrar placeholder
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const placeholder = target.parentElement?.querySelector('.image-placeholder') as HTMLElement;
+                              if (placeholder) placeholder.style.display = 'flex';
+                            }}
+                          />
+                          <div 
+                            className="image-placeholder w-24 h-24 bg-gray-100 rounded-lg border-2 border-gray-200 items-center justify-center hidden"
+                            style={{ display: 'none' }}
+                          >
+                            <Package className="w-10 h-10 text-gray-400" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-24 h-24 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                          <Package className="w-10 h-10 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
                     
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
@@ -427,20 +446,35 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
                         className="w-full p-4 rounded-xl border-2 border-yellow-400 bg-white hover:bg-yellow-50 transition-colors text-left"
                       >
                         <div className="flex gap-4 items-center">
-                          {/* Imagen de la máquina */}
-                          {maquina.imagen ? (
-                            <div className="flex-shrink-0">
-                              <img
-                                src={maquina.imagen}
-                                alt={maquina.nombre}
-                                className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
-                              <Package className="w-8 h-8 text-gray-400" />
-                            </div>
-                          )}
+                          {/* Imagen de la máquina - siempre mostrar */}
+                          <div className="flex-shrink-0 relative">
+                            {maquina.imagen ? (
+                              <>
+                                <img
+                                  src={maquina.imagen}
+                                  alt={maquina.nombre}
+                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
+                                  onError={(e) => {
+                                    // Si la imagen falla al cargar, ocultar y mostrar placeholder
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const placeholder = target.parentElement?.querySelector('.image-placeholder') as HTMLElement;
+                                    if (placeholder) placeholder.style.display = 'flex';
+                                  }}
+                                />
+                                <div 
+                                  className="image-placeholder w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 items-center justify-center hidden"
+                                  style={{ display: 'none' }}
+                                >
+                                  <Package className="w-8 h-8 text-gray-400" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                                <Package className="w-8 h-8 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
                           
                           <div className="flex-1">
                             <h4 className="font-bold text-gray-800">{maquina.nombre}</h4>

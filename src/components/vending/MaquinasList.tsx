@@ -29,7 +29,17 @@ export function MaquinasList({ userId }: MaquinasListProps) {
     try {
       const response = await fetchWithUserId(`/api/maquinas`, { userId });
       const data = await response.json();
-      setMaquinas(data.maquinas || []);
+      const maquinasData = data.maquinas || [];
+      setMaquinas(maquinasData);
+      
+      // Debug: verificar imágenes
+      maquinasData.forEach((m: Maquina) => {
+        if (m.imagen) {
+          console.log(`✅ Máquina "${m.nombre}" tiene imagen (longitud: ${m.imagen.length})`);
+        } else {
+          console.log(`⚠️  Máquina "${m.nombre}" NO tiene imagen`);
+        }
+      });
     } catch (error) {
       console.error("Error cargando máquinas:", error);
     } finally {
@@ -116,15 +126,39 @@ export function MaquinasList({ userId }: MaquinasListProps) {
               key={maquina.id}
               className="border rounded-lg p-4 space-y-2 bg-white dark:bg-neutral-900"
             >
-              {maquina.imagen && (
-                <div className="mb-3">
-                  <img
-                    src={maquina.imagen}
-                    alt={maquina.nombre}
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                </div>
-              )}
+              {/* Imagen de la máquina - siempre mostrar, con placeholder si no hay */}
+              <div className="mb-3 relative">
+                {maquina.imagen && maquina.imagen.trim() !== '' ? (
+                  <>
+                    <img
+                      src={maquina.imagen}
+                      alt={maquina.nombre}
+                      className="w-full h-40 object-cover rounded-lg border-2 border-gray-200"
+                      onLoad={() => {
+                        console.log(`✅ Imagen cargada correctamente para máquina: ${maquina.nombre}`);
+                      }}
+                      onError={(e) => {
+                        console.error(`❌ Error cargando imagen para máquina: ${maquina.nombre}`, e);
+                        // Si la imagen falla al cargar, ocultar y mostrar placeholder
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const placeholder = target.parentElement?.querySelector('.image-placeholder') as HTMLElement;
+                        if (placeholder) placeholder.style.display = 'flex';
+                      }}
+                    />
+                    <div 
+                      className="image-placeholder w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 items-center justify-center hidden"
+                      style={{ display: 'none' }}
+                    >
+                      <Package className="w-16 h-16 text-gray-400" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                    <Package className="w-16 h-16 text-gray-400" />
+                  </div>
+                )}
+              </div>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{maquina.nombre}</h3>
