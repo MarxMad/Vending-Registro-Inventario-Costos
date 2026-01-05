@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
+import { fetchWithUserId } from "~/lib/apiClient";
 import type { Maquina, TipoMaquina, TipoChiclera, TipoProductoChiclera, ProductoChiclera, Ubicacion } from "~/lib/types";
 import { MapPin, X, Camera, Image as ImageIcon } from "lucide-react";
 
@@ -20,7 +21,7 @@ const COLORES = [
 
 const PRODUCTOS_CHICLERA: ProductoChiclera[] = ["chicles", "rocabola", "pelotas", "capsulas", "pokebolas"];
 
-export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMejoradoProps) {
+export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: MaquinaFormMejoradoProps) {
   const [formData, setFormData] = useState({
     nombre: maquina?.nombre || "",
     color: maquina?.color || "",
@@ -151,8 +152,9 @@ export function MaquinaFormMejorado({ maquina, onClose, onSave }: MaquinaFormMej
       const url = "/api/maquinas";
       const method = maquina ? "PUT" : "POST";
       
-      const response = await fetch(url, {
+      const response = await fetchWithUserId(url, {
         method,
+        userId,
         headers: { 
           "Content-Type": "application/json",
         },

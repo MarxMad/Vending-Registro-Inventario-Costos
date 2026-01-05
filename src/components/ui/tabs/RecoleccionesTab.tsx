@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { fetchWithUserId } from "~/lib/apiClient";
 import { Button } from "~/components/ui/Button";
 import { RecoleccionForm } from "~/components/vending/RecoleccionForm";
 import type { Recoleccion, Maquina } from "~/lib/types";
@@ -26,12 +27,12 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
   const loadData = async () => {
     try {
       // Cargar máquinas
-      const maquinasRes = await fetch(`/api/maquinas`);
+      const maquinasRes = await fetchWithUserId(`/api/maquinas`, { userId });
       const maquinasData = await maquinasRes.json();
       setMaquinas(maquinasData.maquinas || []);
 
       // Cargar recolecciones
-      const recoleccionesRes = await fetch(`/api/recolecciones`);
+      const recoleccionesRes = await fetchWithUserId(`/api/recolecciones`, { userId });
       const recoleccionesData = await recoleccionesRes.json();
       const recoleccionesOrdenadas = (recoleccionesData.recolecciones || []).sort(
         (a: Recoleccion, b: Recoleccion) =>

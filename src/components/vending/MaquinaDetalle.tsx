@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchWithUserId } from "~/lib/apiClient";
 import { Input } from "~/components/ui/input";
 import type { Maquina } from "~/lib/types";
 import { Package, X } from "lucide-react";
@@ -11,7 +12,7 @@ interface MaquinaDetalleProps {
   onUpdate: () => void;
 }
 
-export function MaquinaDetalle({ maquina, onClose, onUpdate }: MaquinaDetalleProps) {
+export function MaquinaDetalle({ userId, maquina, onClose, onUpdate }: MaquinaDetalleProps) {
 
   const handleActualizarStock = async (compartimentoId: string, cantidad: number) => {
     try {
@@ -30,8 +31,9 @@ export function MaquinaDetalle({ maquina, onClose, onUpdate }: MaquinaDetallePro
         compartimentos,
       };
 
-      const response = await fetch("/api/maquinas", {
+      const response = await fetchWithUserId("/api/maquinas", {
         method: "PUT",
+        userId,
         headers: { 
           "Content-Type": "application/json",
         },

@@ -26,7 +26,7 @@ export function MaquinasList({ userId }: MaquinasListProps) {
 
   const loadMaquinas = async () => {
     try {
-      const response = await fetch(`/api/maquinas`);
+      const response = await fetchWithUserId(`/api/maquinas`, { userId });
       const data = await response.json();
       setMaquinas(data.maquinas || []);
     } catch (error) {
@@ -40,8 +40,9 @@ export function MaquinasList({ userId }: MaquinasListProps) {
     if (!confirm("¿Estás seguro de eliminar esta máquina?")) return;
     
     try {
-      const response = await fetch(`/api/maquinas?maquinaId=${maquinaId}`, {
+      const response = await fetchWithUserId(`/api/maquinas?maquinaId=${maquinaId}`, {
         method: "DELETE",
+        userId,
       });
       if (response.ok) {
         loadMaquinas();

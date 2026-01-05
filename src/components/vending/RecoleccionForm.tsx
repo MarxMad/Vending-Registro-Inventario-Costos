@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "~/components/ui/Button";
+import { fetchWithUserId } from "~/lib/apiClient";
 import type { Maquina, Recoleccion } from "~/lib/types";
 import { DollarSign, X } from "lucide-react";
 
@@ -12,7 +13,7 @@ interface RecoleccionFormProps {
   onSave: () => void;
 }
 
-export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormProps) {
+export function RecoleccionForm({ userId, maquina, onClose, onSave }: RecoleccionFormProps) {
   const [productosVendidos, setProductosVendidos] = useState<
     Array<{
       compartimentoId: string;
@@ -171,8 +172,9 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
       };
 
       // Primero guardar la recolección
-      const response = await fetch("/api/recolecciones", {
+      const response = await fetchWithUserId("/api/recolecciones", {
         method: "POST",
+        userId,
         headers: { 
           "Content-Type": "application/json",
         },
@@ -199,8 +201,9 @@ export function RecoleccionForm({ maquina, onClose, onSave }: RecoleccionFormPro
             }
           });
 
-          const updateResponse = await fetch("/api/maquinas", {
+          const updateResponse = await fetchWithUserId("/api/maquinas", {
             method: "PUT",
+            userId,
             headers: { 
               "Content-Type": "application/json",
             },

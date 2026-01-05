@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { fetchWithUserId } from "~/lib/apiClient";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import type { CostoInsumo, TipoMaquina } from "~/lib/types";
@@ -24,7 +25,7 @@ export function CostosTab({ userId }: CostosTabProps) {
 
   const loadCostos = async () => {
     try {
-      const response = await fetch(`/api/costos${filtroTipo !== "todos" ? `?tipo=${filtroTipo}` : ""}`);
+      const response = await fetchWithUserId(`/api/costos${filtroTipo !== "todos" ? `?tipo=${filtroTipo}` : ""}`, { userId });
       const data = await response.json();
       const costosOrdenados = (data.costos || []).sort(
         (a: CostoInsumo, b: CostoInsumo) =>
@@ -259,7 +260,7 @@ function CostoForm({ userId, onClose, onSave }: CostoFormProps) {
 
   const loadMaquinas = async () => {
     try {
-      const response = await fetch(`/api/maquinas`);
+      const response = await fetchWithUserId(`/api/maquinas`, { userId });
       const data = await response.json();
       const maquinasFiltradas = (data.maquinas || []).filter((m: any) => m.tipo === formData.tipoMaquina);
       setMaquinas(maquinasFiltradas);
@@ -319,8 +320,9 @@ function CostoForm({ userId, onClose, onSave }: CostoFormProps) {
     }
 
     try {
-      const response = await fetch("/api/costos", {
+      const response = await fetchWithUserId("/api/costos", {
         method: "POST",
+        userId,
         headers: { 
           "Content-Type": "application/json",
         },

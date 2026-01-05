@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { fetchWithUserId } from "~/lib/apiClient";
 import type { Rentabilidad, Maquina } from "~/lib/types";
 import { TrendingUp, TrendingDown, DollarSign, Package } from "lucide-react";
 
@@ -23,7 +24,7 @@ export function RentabilidadView({ userId }: RentabilidadViewProps) {
   const loadData = async () => {
     try {
       // Cargar máquinas
-      const maquinasRes = await fetch(`/api/maquinas`);
+      const maquinasRes = await fetchWithUserId(`/api/maquinas`, { userId });
       const maquinasData = await maquinasRes.json();
       setMaquinas(maquinasData.maquinas || []);
 
