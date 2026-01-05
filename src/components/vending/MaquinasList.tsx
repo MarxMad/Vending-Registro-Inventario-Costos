@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchWithUserId } from "~/lib/apiClient";
 import { Button } from "~/components/ui/Button";
 import type { Maquina } from "~/lib/types";
 import { Plus, MapPin, Package, Calendar, Edit, Trash2, Info } from "lucide-react";
