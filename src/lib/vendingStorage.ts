@@ -24,6 +24,16 @@ const redis = useRedis
     })
   : null;
 
+// Logging para diagnóstico (solo en desarrollo)
+if (process.env.NODE_ENV !== 'production') {
+  if (useRedis) {
+    console.log('✅ Usando Upstash Redis para almacenamiento persistente');
+  } else {
+    console.warn('⚠️  Upstash Redis NO configurado - usando almacenamiento en memoria (los datos se perderán al recargar)');
+    console.warn('   Configura KV_REST_API_URL y KV_REST_API_TOKEN para persistencia');
+  }
+}
+
 // Keys para almacenamiento
 function getMaquinasKey(userId: string): string {
   return `${APP_NAME}:maquinas:${userId}`;
@@ -66,16 +76,22 @@ export async function saveMaquina(userId: string, maquina: Maquina): Promise<voi
   
   // Guardar máquina individual
   if (redis) {
-    await redis.set(key, maquina);
-    // Actualizar lista de máquinas
-    const maquinas = await getMaquinas(userId);
-    const index = maquinas.findIndex(m => m.id === maquina.id);
-    if (index >= 0) {
-      maquinas[index] = maquina;
-    } else {
-      maquinas.push(maquina);
+    try {
+      await redis.set(key, maquina);
+      // Actualizar lista de máquinas
+      const maquinas = await getMaquinas(userId);
+      const index = maquinas.findIndex(m => m.id === maquina.id);
+      if (index >= 0) {
+        maquinas[index] = maquina;
+      } else {
+        maquinas.push(maquina);
+      }
+      await redis.set(maquinasKey, maquinas);
+      console.log(`✅ Máquina guardada en Redis: ${key}`);
+    } catch (error) {
+      console.error('❌ Error guardando en Redis:', error);
+      throw error;
     }
-    await redis.set(maquinasKey, maquinas);
   } else {
     localStore.set(key, maquina);
     const maquinas = (localStore.get(maquinasKey) as Maquina[]) || [];
@@ -86,6 +102,7 @@ export async function saveMaquina(userId: string, maquina: Maquina): Promise<voi
       maquinas.push(maquina);
     }
     localStore.set(maquinasKey, maquinas);
+    console.warn(`⚠️  Máquina guardada en memoria (se perderá al recargar): ${key}`);
   }
 }
 
@@ -140,9 +157,16 @@ export async function saveRecoleccion(userId: string, recoleccion: Recoleccion):
   recolecciones.push(recoleccion);
   
   if (redis) {
-    await redis.set(key, recolecciones);
+    try {
+      await redis.set(key, recolecciones);
+      console.log(`✅ Recolección guardada en Redis: ${key}`);
+    } catch (error) {
+      console.error('❌ Error guardando recolección en Redis:', error);
+      throw error;
+    }
   } else {
     localStore.set(key, recolecciones);
+    console.warn(`⚠️  Recolección guardada en memoria (se perderá al recargar): ${key}`);
   }
 }
 
