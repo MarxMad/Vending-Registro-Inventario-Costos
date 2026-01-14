@@ -45,6 +45,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(maquina?.imagen || null);
   const [isSaving, setIsSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Inicializar productos si es una máquina nueva
   useEffect(() => {
@@ -150,6 +151,24 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     // Prevenir múltiples envíos
     if (isSaving) {
       console.log('⚠️  Ya se está guardando, ignorando envío duplicado');
+      return;
+    }
+
+    // Limpiar errores anteriores
+    setFormErrors({});
+    const newErrors: Record<string, string> = {};
+
+    // Validaciones
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = "El nombre de la máquina es requerido.";
+    }
+    if (!formData.ubicacion.direccion.trim()) {
+      newErrors['ubicacion.direccion'] = "La dirección de la ubicación es requerida.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      setIsSaving(false); // Asegurarse de que el botón no se quede deshabilitado
       return;
     }
     
@@ -276,6 +295,9 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             disabled={isSaving}
             className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
           />
+          {formErrors.nombre && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.nombre}</p>
+          )}
         </div>
 
         {/* Foto de la Máquina */}
@@ -438,6 +460,9 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
               disabled={isSaving}
               className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
             />
+            {formErrors['ubicacion.direccion'] && (
+              <p className="text-red-500 text-xs mt-1">{formErrors['ubicacion.direccion']}</p>
+            )}
             <div className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-red-600" />
               <Input
