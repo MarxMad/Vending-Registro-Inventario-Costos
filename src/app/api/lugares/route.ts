@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const data = lugarSchema.parse(body);
     
     // Generar ID si no existe
-    const id = data.id || `lugar-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `lugar-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     
     const lugar: Lugar = {
       id,

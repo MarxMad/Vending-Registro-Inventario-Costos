@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const data = costoSchema.parse(body);
-    const id = data.id || `costo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `costo-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     
     const costo: CostoInsumo = {
       id,

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const data = maquinaSchema.parse(body);
     
     // Generar ID si no existe
-    const id = data.id || `maquina-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `maquina-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     
     // Crear compartimentos según el tipo - asegurar que producto sea null en lugar de undefined
     let compartimentos: Compartimento[] = data.compartimentos.map(comp => ({

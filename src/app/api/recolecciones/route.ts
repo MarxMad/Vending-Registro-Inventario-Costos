@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const data = recoleccionSchema.parse(body);
-    const id = data.id || `recoleccion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `recoleccion-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     
     const recoleccion: Recoleccion = {
       id,
