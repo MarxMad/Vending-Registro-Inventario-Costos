@@ -37,6 +37,20 @@ export interface Ubicacion {
   googleMapsUrl?: string;
 }
 
+// Lugar/Ubicación física donde pueden haber múltiples máquinas
+export interface Lugar {
+  id: string;
+  nombre: string; // Nombre del lugar (ej: "Centro Comercial", "Tienda ABC")
+  direccion: string;
+  coordenadas?: {
+    lat: number;
+    lng: number;
+  };
+  googleMapsUrl?: string;
+  notas?: string;
+  fechaCreacion: string; // ISO date string
+}
+
 export interface Maquina {
   id: string;
   nombre: string;
@@ -44,7 +58,7 @@ export interface Maquina {
   tipo: TipoMaquina;
   tipoChiclera?: TipoChiclera; // Solo para chicleras
   tipoProductoChiclera?: TipoProductoChiclera; // Granel o bola
-  ubicacion: Ubicacion;
+  lugarId: string; // ID del lugar donde está la máquina
   compartimentos: Compartimento[];
   costoMaquina: number; // Costo de la máquina
   fechaInstalacion: string; // ISO date string
@@ -69,6 +83,11 @@ export interface Recoleccion {
     productoNombre: string;
     ingresos: number;
   }[];
+  // Campos específicos para máquinas pelucheras (sistema de turnos/giros)
+  turnosRealizados?: number; // Número de giros/turnos realizados (ingresos / precio por turno)
+  peluchesVendidos?: number; // Cantidad real de peluches que salieron (puede ser menor a turnos)
+  precioPorTurno?: number; // Precio de cada giro/turno (normalmente $5)
+  tasaConversion?: number; // Porcentaje: (peluchesVendidos / turnosRealizados) * 100
   costos: {
     concepto: string;
     monto: number;

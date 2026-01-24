@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import { fetchWithUserId } from "~/lib/apiClient";
-import type { Maquina, TipoMaquina, TipoChiclera, TipoProductoChiclera, ProductoChiclera, Ubicacion } from "~/lib/types";
-import { MapPin, X, Camera, Image as ImageIcon } from "lucide-react";
+import type { Maquina, TipoMaquina, TipoChiclera, TipoProductoChiclera, ProductoChiclera, Lugar } from "~/lib/types";
+import { MapPin, X, Camera, Image as ImageIcon, Plus, Building2 } from "lucide-react";
 
 interface MaquinaFormMejoradoProps {
   userId: string;
@@ -22,6 +22,17 @@ const COLORES = [
 const PRODUCTOS_CHICLERA: ProductoChiclera[] = ["chicles", "rocabola", "pelotas", "capsulas", "pokebolas"];
 
 export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: MaquinaFormMejoradoProps) {
+  const [lugares, setLugares] = useState<Lugar[]>([]);
+  const [lugarSeleccionadoId, setLugarSeleccionadoId] = useState<string>(maquina?.lugarId || "");
+  const [mostrarFormLugar, setMostrarFormLugar] = useState(false);
+  const [nuevoLugar, setNuevoLugar] = useState({
+    nombre: "",
+    direccion: "",
+    googleMapsUrl: "",
+    notas: "",
+  });
+  const [cargandoLugares, setCargandoLugares] = useState(true);
+
   const [formData, setFormData] = useState({
     nombre: maquina?.nombre || "",
     color: maquina?.color || "",
@@ -30,7 +41,6 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     tiposProductoChiclera: maquina?.compartimentos.map(c => 
       c.tipoGranelBola || "granel"
     ) as TipoProductoChiclera[] || [] as TipoProductoChiclera[],
-    ubicacion: maquina?.ubicacion || { direccion: "", coordenadas: undefined, googleMapsUrl: "" },
     productos: maquina?.compartimentos.map(c => {
       // Si tiene producto, usar el nombre del producto, si no usar tipoProducto
       return c.producto?.nombre || c.tipoProducto || "";
@@ -46,6 +56,62 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
   const [imagenPreview, setImagenPreview] = useState<string | null>(maquina?.imagen || null);
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Cargar lugares al montar el componente
+  useEffect(() => {
+    loadLugares();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const loadLugares = async () => {
+    setCargandoLugares(true);
+    try {
+      const response = await fetchWithUserId("/api/lugares", { userId });
+      if (response.ok) {
+        const data = await response.json();
+        setLugares(data.lugares || []);
+      }
+    } catch (error) {
+      console.error("Error cargando lugares:", error);
+    } finally {
+      setCargandoLugares(false);
+    }
+  };
+
+  const handleCrearLugar = async () => {
+    if (!nuevoLugar.nombre.trim() || !nuevoLugar.direccion.trim()) {
+      alert("El nombre y la dirección del lugar son requeridos");
+      return;
+    }
+
+    try {
+      const response = await fetchWithUserId("/api/lugares", {
+        method: "POST",
+        userId,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nuevoLugar.nombre,
+          direccion: nuevoLugar.direccion,
+          googleMapsUrl: nuevoLugar.googleMapsUrl || undefined,
+          notas: nuevoLugar.notas || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await loadLugares();
+        setLugarSeleccionadoId(data.lugar.id);
+        setMostrarFormLugar(false);
+        setNuevoLugar({ nombre: "", direccion: "", googleMapsUrl: "", notas: "" });
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error creando lugar:", error);
+      alert("Error al crear el lugar");
+    }
+  };
 
   // Inicializar productos si es una máquina nueva
   useEffect(() => {
@@ -70,24 +136,6 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleUbicacionChange = (field: keyof Ubicacion, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      ubicacion: { ...prev.ubicacion, [field]: value }
-    }));
-  };
-
-  const handleGoogleMapsUrl = (url: string) => {
-    // Extraer coordenadas de URL de Google Maps si es posible
-    const match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-    if (match) {
-      handleUbicacionChange("coordenadas", {
-        lat: parseFloat(match[1]),
-        lng: parseFloat(match[2])
-      });
-    }
-    handleUbicacionChange("googleMapsUrl", url);
-  };
 
   const handleProductoChange = (index: number, producto: string) => {
     const nuevosProductos = [...formData.productos];
@@ -162,8 +210,8 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     if (!formData.nombre.trim()) {
       newErrors.nombre = "El nombre de la máquina es requerido.";
     }
-    if (!formData.ubicacion.direccion.trim()) {
-      newErrors['ubicacion.direccion'] = "La dirección de la ubicación es requerida.";
+    if (!lugarSeleccionadoId) {
+      newErrors.lugarId = "Debes seleccionar o crear un lugar.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -207,7 +255,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
           tipoProductoChiclera: formData.tipo === "chiclera" && formData.tiposProductoChiclera.length > 0 
             ? formData.tiposProductoChiclera[0] 
             : undefined,
-          ubicacion: formData.ubicacion,
+          lugarId: lugarSeleccionadoId,
           compartimentos,
           costoMaquina: 0, // Ya no se usa, pero mantenemos para compatibilidad
           fechaInstalacion: maquina?.fechaInstalacion || new Date().toISOString(),
@@ -448,42 +496,93 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
         )}
 
 
-        {/* Ubicación */}
+        {/* Selección de Lugar */}
         <div>
-          <label className="block text-sm font-bold mb-2 text-gray-800">Ubicación *</label>
-          <div className="space-y-2">
-            <Input
-              placeholder="Dirección"
-              value={formData.ubicacion.direccion}
-              onChange={(e) => handleUbicacionChange("direccion", e.target.value)}
-              required
-              disabled={isSaving}
-              className="border-2 border-yellow-300 bg-white text-black focus:border-red-500"
-            />
-            {formErrors['ubicacion.direccion'] && (
-              <p className="text-red-500 text-xs mt-1">{formErrors['ubicacion.direccion']}</p>
-            )}
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-red-600" />
+          <label className="block text-sm font-bold mb-2 text-gray-800 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-red-600" />
+            Lugar * 
+          </label>
+          {formErrors.lugarId && (
+            <p className="text-red-500 text-xs mb-2">{formErrors.lugarId}</p>
+          )}
+          
+          {!mostrarFormLugar ? (
+            <div className="space-y-2">
+              {cargandoLugares ? (
+                <div className="text-center py-4 text-gray-500">Cargando lugares...</div>
+              ) : (
+                <>
+                  <select
+                    value={lugarSeleccionadoId}
+                    onChange={(e) => setLugarSeleccionadoId(e.target.value)}
+                    required
+                    disabled={isSaving}
+                    className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="">Selecciona un lugar...</option>
+                    {lugares.map((lugar) => (
+                      <option key={lugar.id} value={lugar.id}>
+                        {lugar.nombre} - {lugar.direccion}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    onClick={() => setMostrarFormLugar(true)}
+                    variant="outline"
+                    className="w-full"
+                    disabled={isSaving}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Crear Nuevo Lugar
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-gray-800">Nuevo Lugar</h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarFormLugar(false);
+                    setNuevoLugar({ nombre: "", direccion: "", googleMapsUrl: "", notas: "" });
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <Input
+                placeholder="Nombre del lugar (ej: Centro Comercial)"
+                value={nuevoLugar.nombre}
+                onChange={(e) => setNuevoLugar({ ...nuevoLugar, nombre: e.target.value })}
+                className="border-2 border-yellow-300 bg-white text-black"
+              />
+              <Input
+                placeholder="Dirección completa"
+                value={nuevoLugar.direccion}
+                onChange={(e) => setNuevoLugar({ ...nuevoLugar, direccion: e.target.value })}
+                className="border-2 border-yellow-300 bg-white text-black"
+              />
               <Input
                 placeholder="URL de Google Maps (opcional)"
-                value={formData.ubicacion.googleMapsUrl || ""}
-                onChange={(e) => handleGoogleMapsUrl(e.target.value)}
-                disabled={isSaving}
-                className="flex-1 border-2 border-yellow-300 focus:border-red-500"
+                value={nuevoLugar.googleMapsUrl}
+                onChange={(e) => setNuevoLugar({ ...nuevoLugar, googleMapsUrl: e.target.value })}
+                className="border-2 border-yellow-300 bg-white text-black"
               />
-            </div>
-            {formData.ubicacion.googleMapsUrl && (
-              <a
-                href={formData.ubicacion.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline"
+              <Button
+                type="button"
+                onClick={handleCrearLugar}
+                className="w-full"
+                disabled={isSaving || !nuevoLugar.nombre.trim() || !nuevoLugar.direccion.trim()}
               >
-                Ver en Google Maps
-              </a>
-            )}
-          </div>
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Lugar
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Productos */}

@@ -12,17 +12,7 @@ const maquinaSchema = z.object({
   tipo: z.enum(['peluchera', 'chiclera']),
   tipoChiclera: z.enum(['individual', 'doble', 'triple']).optional(),
   tipoProductoChiclera: z.enum(['granel', 'bola']).optional(),
-  ubicacion: z.union([
-    z.string().min(1), // Para compatibilidad con versiones anteriores
-    z.object({
-      direccion: z.string().min(1),
-      coordenadas: z.object({
-        lat: z.number(),
-        lng: z.number(),
-      }).optional(),
-      googleMapsUrl: z.string().optional(),
-    }),
-  ]),
+  lugarId: z.string().min(1), // ID del lugar donde está la máquina
   compartimentos: z.array(z.object({
     id: z.string(),
     producto: z.object({
@@ -120,18 +110,6 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Normalizar ubicación
-    let ubicacionNormalizada;
-    if (typeof data.ubicacion === 'string') {
-      ubicacionNormalizada = {
-        direccion: data.ubicacion,
-        coordenadas: undefined,
-        googleMapsUrl: undefined,
-      };
-    } else {
-      ubicacionNormalizada = data.ubicacion;
-    }
-
     const maquina: Maquina = {
       id,
       nombre: data.nombre,
@@ -139,7 +117,7 @@ export async function POST(request: NextRequest) {
       tipo: data.tipo,
       tipoChiclera: data.tipo === 'chiclera' ? (data.tipoChiclera || 'individual') : undefined,
       tipoProductoChiclera: data.tipo === 'chiclera' ? (data.tipoProductoChiclera || 'granel') : undefined,
-      ubicacion: ubicacionNormalizada,
+      lugarId: data.lugarId,
       compartimentos,
       costoMaquina: data.costoMaquina,
       fechaInstalacion: data.fechaInstalacion,

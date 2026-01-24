@@ -16,13 +16,27 @@ const isValidUrl = (url: string | undefined): boolean => {
   }
 };
 
-const useRedis = isValidUrl(process.env.KV_REST_API_URL) && process.env.KV_REST_API_TOKEN;
-const redis = useRedis
-  ? new Redis({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
-    })
-  : null;
+// Función para validar y obtener configuración de Redis
+function getRedisConfig() {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  
+  const urlValid = isValidUrl(url);
+  const hasToken = !!token && token.trim().length > 0;
+  const useRedis = urlValid && hasToken;
+  
+  return {
+    useRedis,
+    redis: useRedis && url && token
+      ? new Redis({
+          url: url,
+          token: token,
+        })
+      : null,
+  };
+}
+
+const { useRedis, redis } = getRedisConfig();
 
 function getUserNotificationDetailsKey(fid: number): string {
   return `${APP_NAME}:user:${fid}`;

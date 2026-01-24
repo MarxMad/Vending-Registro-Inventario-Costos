@@ -8,9 +8,21 @@ import { APP_NAME } from '~/lib/constants';
  * Útil para debuggear problemas de persistencia
  */
 export async function GET(request: NextRequest) {
-  const hasUrl = !!process.env.KV_REST_API_URL;
-  const hasToken = !!process.env.KV_REST_API_TOKEN;
-  const isValidUrl = hasUrl && process.env.KV_REST_API_URL?.startsWith('https://');
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  const hasUrl = !!url;
+  const hasToken = !!token && token.trim().length > 0;
+  
+  // Validar URL más robustamente
+  let isValidUrl = false;
+  if (url) {
+    try {
+      const parsed = new URL(url);
+      isValidUrl = parsed.protocol === 'https:';
+    } catch {
+      isValidUrl = false;
+    }
+  }
   
   const isUsingRedis = isValidUrl && hasToken;
   
@@ -70,7 +82,17 @@ export async function GET(request: NextRequest) {
       hasToken,
       isValidUrl,
       nodeEnv: process.env.NODE_ENV,
-      urlPreview: hasUrl ? process.env.KV_REST_API_URL?.substring(0, 30) + '...' : null,
+      urlPreview: url ? `${url.substring(0, 40)}...` : null,
+      urlLength: url?.length || 0,
+      tokenLength: token?.length || 0,
+      tokenPreview: token ? `${token.substring(0, 10)}...${token.substring(token.length - 4)}` : null,
+      diagnostics: {
+        urlExists: hasUrl,
+        urlIsValid: isValidUrl,
+        tokenExists: hasToken,
+        tokenIsNotEmpty: token ? token.trim().length > 0 : false,
+        allConditionsMet: isValidUrl && hasToken,
+      },
     },
     user: {
       authenticated: !!userId,

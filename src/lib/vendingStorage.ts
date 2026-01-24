@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { APP_NAME } from './constants';
-import type { Maquina, Recoleccion, NotificacionRecoleccion, CostoInsumo } from './types';
+import type { Maquina, Recoleccion, NotificacionRecoleccion, CostoInsumo, Lugar } from './types';
 
 // In-memory fallback storage
 const localStore = new Map<string, any>();
@@ -16,23 +16,69 @@ const isValidUrl = (url: string | undefined): boolean => {
   }
 };
 
-const useRedis = isValidUrl(process.env.KV_REST_API_URL) && process.env.KV_REST_API_TOKEN;
-const redis = useRedis
-  ? new Redis({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
-    })
-  : null;
-
-// Logging para diagnóstico (solo en desarrollo)
-if (process.env.NODE_ENV !== 'production') {
-  if (useRedis) {
-    console.log('✅ Usando Upstash Redis para almacenamiento persistente');
-  } else {
-    console.warn('⚠️  Upstash Redis NO configurado - usando almacenamiento en memoria (los datos se perderán al recargar)');
-    console.warn('   Configura KV_REST_API_URL y KV_REST_API_TOKEN para persistencia');
+// Función para validar y obtener configuración de Redis
+function getRedisConfig() {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  
+  // Logging detallado para diagnóstico
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔍 Verificando configuración de Redis:');
+    console.log(`   - KV_REST_API_URL existe: ${!!url}`);
+    console.log(`   - KV_REST_API_TOKEN existe: ${!!token}`);
+    
+    if (url) {
+      const urlValid = isValidUrl(url);
+      console.log(`   - URL es válida: ${urlValid}`);
+      if (!urlValid) {
+        console.warn(`   - URL no válida: debe empezar con https://`);
+        console.warn(`   - URL recibida: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}`);
+      } else {
+        console.log(`   - URL preview: ${url.substring(0, 40)}...`);
+      }
+    }
+    
+    if (token) {
+      console.log(`   - Token length: ${token.length} caracteres`);
+      console.log(`   - Token preview: ${token.substring(0, 10)}...${token.substring(token.length - 4)}`);
+    }
   }
+  
+  const urlValid = isValidUrl(url);
+  const hasToken = !!token && token.trim().length > 0;
+  const useRedis = urlValid && hasToken;
+  
+  if (process.env.NODE_ENV !== 'production') {
+    if (useRedis) {
+      console.log('✅ Usando Upstash Redis para almacenamiento persistente');
+    } else {
+      console.warn('⚠️  Upstash Redis NO configurado - usando almacenamiento en memoria (los datos se perderán al recargar)');
+      if (!url) {
+        console.warn('   ❌ KV_REST_API_URL no está definida');
+      } else if (!urlValid) {
+        console.warn('   ❌ KV_REST_API_URL no es válida (debe empezar con https://)');
+      }
+      if (!token) {
+        console.warn('   ❌ KV_REST_API_TOKEN no está definida');
+      } else if (!hasToken) {
+        console.warn('   ❌ KV_REST_API_TOKEN está vacía');
+      }
+      console.warn('   💡 Verifica que las variables estén en .env.local y reinicia el servidor');
+    }
+  }
+  
+  return {
+    useRedis,
+    redis: useRedis && url && token
+      ? new Redis({
+          url: url,
+          token: token,
+        })
+      : null,
+  };
 }
+
+const { useRedis, redis } = getRedisConfig();
 
 // Keys para almacenamiento
 function getMaquinasKey(userId: string): string {
@@ -49,6 +95,14 @@ function getCostosKey(userId: string): string {
 
 function getMaquinaKey(userId: string, maquinaId: string): string {
   return `${APP_NAME}:maquina:${userId}:${maquinaId}`;
+}
+
+function getLugaresKey(userId: string): string {
+  return `${APP_NAME}:lugares:${userId}`;
+}
+
+function getLugarKey(userId: string, lugarId: string): string {
+  return `${APP_NAME}:lugar:${userId}:${lugarId}`;
 }
 
 // ========== MÁQUINAS ==========
@@ -244,6 +298,8 @@ export async function deleteRecoleccionesPorMaquina(userId: string, maquinaId: s
 
 export async function getMaquinasParaRecoleccion(userId: string): Promise<NotificacionRecoleccion[]> {
   const maquinas = await getMaquinas(userId);
+  const lugares = await getLugares(userId);
+  const lugaresMap = new Map(lugares.map(l => [l.id, l]));
   const notificaciones: NotificacionRecoleccion[] = [];
   const ahora = new Date();
   
@@ -263,12 +319,14 @@ export async function getMaquinasParaRecoleccion(userId: string): Promise<Notifi
     else if (porcentaje >= 75) prioridad = 'media';
     
     if (porcentaje >= 50) { // Solo notificar si está al 50% o más
+      // Obtener nombre del lugar
+      const lugar = maquina.lugarId ? lugaresMap.get(maquina.lugarId) : null;
+      const ubicacionNombre = lugar ? `${lugar.nombre} - ${lugar.direccion}` : 'Sin lugar asignado';
+      
       notificaciones.push({
         maquinaId: maquina.id,
         maquinaNombre: maquina.nombre,
-        ubicacion: typeof maquina.ubicacion === 'string' 
-          ? maquina.ubicacion 
-          : maquina.ubicacion.direccion,
+        ubicacion: ubicacionNombre,
         diasDesdeUltimaRecoleccion: diasTranscurridos,
         diasEstimados: diasEstimados,
         prioridad,
@@ -310,3 +368,94 @@ export async function saveCosto(userId: string, costo: CostoInsumo): Promise<voi
   }
 }
 
+// ========== LUGARES ==========
+
+export async function getLugares(userId: string): Promise<Lugar[]> {
+  const key = getLugaresKey(userId);
+  if (redis) {
+    try {
+      const data = await redis.get<Lugar[]>(key);
+      const lugares = data || [];
+      console.log(`📖 Lugares leídos de Redis: ${lugares.length} lugar(es)`);
+      return lugares;
+    } catch (error) {
+      console.error('❌ Error leyendo lugares de Redis:', error);
+      throw error;
+    }
+  }
+  const lugares = (localStore.get(key) as Lugar[]) || [];
+  console.warn(`⚠️  Lugares leídos de memoria: ${lugares.length} lugar(es)`);
+  return lugares;
+}
+
+export async function getLugar(userId: string, lugarId: string): Promise<Lugar | null> {
+  const key = getLugarKey(userId, lugarId);
+  if (redis) {
+    return await redis.get<Lugar>(key);
+  }
+  return (localStore.get(key) as Lugar) || null;
+}
+
+export async function saveLugar(userId: string, lugar: Lugar): Promise<void> {
+  const key = getLugarKey(userId, lugar.id);
+  const lugaresKey = getLugaresKey(userId);
+  
+  // Guardar lugar individual
+  if (redis) {
+    try {
+      await redis.set(key, lugar);
+      // Actualizar lista de lugares
+      const lugares = await getLugares(userId);
+      const index = lugares.findIndex(l => l.id === lugar.id);
+      if (index >= 0) {
+        lugares[index] = lugar;
+      } else {
+        lugares.push(lugar);
+      }
+      await redis.set(lugaresKey, lugares);
+      console.log(`✅ Lugar guardado en Redis: ${key} (total lugares: ${lugares.length})`);
+    } catch (error) {
+      console.error('❌ Error guardando lugar en Redis:', error);
+      throw error;
+    }
+  } else {
+    localStore.set(key, lugar);
+    const lugares = (localStore.get(lugaresKey) as Lugar[]) || [];
+    const index = lugares.findIndex(l => l.id === lugar.id);
+    if (index >= 0) {
+      lugares[index] = lugar;
+    } else {
+      lugares.push(lugar);
+    }
+    localStore.set(lugaresKey, lugares);
+    console.warn(`⚠️  Lugar guardado en memoria (se perderá al recargar): ${key}`);
+  }
+}
+
+export async function deleteLugar(userId: string, lugarId: string): Promise<void> {
+  const key = getLugarKey(userId, lugarId);
+  const lugaresKey = getLugaresKey(userId);
+  
+  // Eliminar lugar
+  if (redis) {
+    try {
+      await redis.del(key);
+      const lugares = await getLugares(userId);
+      const filtered = lugares.filter(l => l.id !== lugarId);
+      await redis.set(lugaresKey, filtered);
+      console.log(`✅ Lugar eliminado de Redis: ${key}`);
+    } catch (error) {
+      console.error('❌ Error eliminando lugar de Redis:', error);
+      throw error;
+    }
+  } else {
+    localStore.delete(key);
+    const lugares = (localStore.get(lugaresKey) as Lugar[]) || [];
+    const filtered = lugares.filter(l => l.id !== lugarId);
+    localStore.set(lugaresKey, filtered);
+    console.warn(`⚠️  Lugar eliminado de memoria: ${key}`);
+  }
+  
+  // Nota: No eliminamos las máquinas automáticamente, solo el lugar
+  // Las máquinas quedarán sin lugar asignado (se puede manejar en la UI)
+}

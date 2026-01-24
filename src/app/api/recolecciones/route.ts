@@ -18,6 +18,11 @@ const recoleccionSchema = z.object({
     productoNombre: z.string(),
     ingresos: z.number().min(0),
   })),
+  // Campos específicos para máquinas pelucheras
+  turnosRealizados: z.number().min(0).optional(),
+  peluchesVendidos: z.number().min(0).optional(),
+  precioPorTurno: z.number().min(0).optional(),
+  tasaConversion: z.number().min(0).max(100).optional(),
   costos: z.array(z.object({
     concepto: z.string(),
     monto: z.number().min(0),
@@ -74,6 +79,10 @@ export async function POST(request: NextRequest) {
       comisionLocal: data.comisionLocal,
       ingresosNetos: data.ingresosNetos,
       productosVendidos: data.productosVendidos,
+      turnosRealizados: data.turnosRealizados,
+      peluchesVendidos: data.peluchesVendidos,
+      precioPorTurno: data.precioPorTurno,
+      tasaConversion: data.tasaConversion,
       costos: data.costos || [],
       notas: data.notas,
     };

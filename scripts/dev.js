@@ -3,9 +3,21 @@ import { createServer } from 'net';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+// Primero intenta cargar .env.local (tiene prioridad)
+// Si no existe, carga .env como fallback
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+  console.log('✅ Variables de entorno cargadas desde .env.local');
+} else if (fs.existsSync('.env')) {
+  dotenv.config({ path: '.env' });
+  console.log('✅ Variables de entorno cargadas desde .env');
+  console.log('💡 Tip: Considera renombrar .env a .env.local para mejor práctica');
+} else {
+  console.warn('⚠️  No se encontró archivo .env.local ni .env');
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(path.normalize(path.join(__dirname, '..')));
