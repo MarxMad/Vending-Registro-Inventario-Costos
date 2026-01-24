@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import type { Maquina, NotificacionRecoleccion, Recoleccion } from "~/lib/types";
+import type { Maquina, NotificacionRecoleccion, Recoleccion, Lugar } from "~/lib/types";
 import { AlertTriangle, TrendingUp, DollarSign, Package, Bell, Clock } from "lucide-react";
 import { fetchWithUserId } from "~/lib/apiClient";
 
@@ -52,6 +52,7 @@ export function Dashboard({ userId }: DashboardProps) {
   });
   const [notificaciones, setNotificaciones] = useState<NotificacionRecoleccion[]>([]);
   const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+  const [lugares, setLugares] = useState<Lugar[]>([]);
   const [_recolecciones, setRecolecciones] = useState<Recoleccion[]>([]);
   const [ingresosPorDia, setIngresosPorDia] = useState<Array<{ fecha: string; ingresos: number }>>(inicializarIngresosPorDia());
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,19 @@ export function Dashboard({ userId }: DashboardProps) {
   const loadDashboard = async () => {
     setLoading(true);
     try {
+      // Cargar lugares primero
+      let lugaresData: Lugar[] = [];
+      try {
+        const lugaresRes = await fetchWithUserId(`/api/lugares`, { userId });
+        if (lugaresRes.ok) {
+          const data = await lugaresRes.json();
+          lugaresData = data.lugares || [];
+          setLugares(lugaresData);
+        }
+      } catch (error) {
+        console.error("Error cargando lugares:", error);
+      }
+
       let maquinasData: Maquina[] = [];
       try {
         const maquinasRes = await fetchWithUserId(`/api/maquinas`, { userId });
@@ -329,7 +343,10 @@ export function Dashboard({ userId }: DashboardProps) {
                     <div>
                       <p className="font-bold text-gray-800">{maquina.nombre}</p>
                       <p className="text-xs text-gray-600">
-                        {typeof maquina.ubicacion === 'string' ? maquina.ubicacion : maquina.ubicacion.direccion}
+                        {(() => {
+                          const lugar = lugares.find(l => l.id === maquina.lugarId);
+                          return lugar ? `${lugar.nombre} - ${lugar.direccion}` : 'Sin lugar asignado';
+                        })()}
                       </p>
                     </div>
                     <div className="text-right">
