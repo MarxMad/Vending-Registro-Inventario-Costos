@@ -64,7 +64,7 @@ export function MaquinasList({ userId }: MaquinasListProps) {
         userId,
       });
       if (response.ok) {
-        loadMaquinas();
+        loadData();
       }
     } catch (error) {
       console.error("Error eliminando máquina:", error);
@@ -82,7 +82,7 @@ export function MaquinasList({ userId }: MaquinasListProps) {
         maquina={detalleMaquina}
         onClose={() => setDetalleMaquina(null)}
         onUpdate={() => {
-          loadMaquinas();
+          loadData();
           setDetalleMaquina(null);
         }}
       />
