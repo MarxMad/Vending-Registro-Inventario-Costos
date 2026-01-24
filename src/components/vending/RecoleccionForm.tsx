@@ -225,8 +225,6 @@ export function RecoleccionForm({ userId, maquina, onClose, onSave }: Recoleccio
             (compartimento.tipoProducto as string).charAt(0).toUpperCase() + 
             (compartimento.tipoProducto as string).slice(1) 
           : "Peluches");
-        const precio = compartimento.precioVenta || compartimento.producto?.precio || precioPorTurno;
-        
         productosVendidosFinal = [{
           compartimentoId: compartimento.id,
           cantidad: peluchesVendidos,

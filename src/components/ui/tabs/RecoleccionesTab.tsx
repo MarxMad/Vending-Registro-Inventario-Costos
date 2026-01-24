@@ -452,7 +452,7 @@ export function RecoleccionesTab({ userId }: RecoleccionesTabProps) {
         <div className="text-center py-8 text-gray-500">
           <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>No hay lugares registrados</p>
-          <p className="text-sm mt-2">Crea un lugar desde la pestaña "Máquinas" para comenzar</p>
+          <p className="text-sm mt-2">Crea un lugar desde la pestaña &quot;Máquinas&quot; para comenzar</p>
         </div>
       ) : (
         <div className="space-y-3">

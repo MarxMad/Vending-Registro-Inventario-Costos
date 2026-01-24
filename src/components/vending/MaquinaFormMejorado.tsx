@@ -6,7 +6,7 @@ import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import { fetchWithUserId } from "~/lib/apiClient";
 import type { Maquina, TipoMaquina, TipoChiclera, TipoProductoChiclera, ProductoChiclera, Lugar } from "~/lib/types";
-import { MapPin, X, Camera, Image as ImageIcon, Plus, Building2 } from "lucide-react";
+import { X, Camera, Image as ImageIcon, Plus, Building2 } from "lucide-react";
 
 interface MaquinaFormMejoradoProps {
   userId: string;

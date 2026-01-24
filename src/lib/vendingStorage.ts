@@ -78,7 +78,7 @@ function getRedisConfig() {
   };
 }
 
-const { useRedis, redis } = getRedisConfig();
+const { redis } = getRedisConfig();
 
 // Keys para almacenamiento
 function getMaquinasKey(userId: string): string {

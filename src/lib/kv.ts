@@ -36,7 +36,7 @@ function getRedisConfig() {
   };
 }
 
-const { useRedis, redis } = getRedisConfig();
+const { redis } = getRedisConfig();
 
 function getUserNotificationDetailsKey(fid: number): string {
   return `${APP_NAME}:user:${fid}`;
