@@ -210,6 +210,9 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     if (!formData.nombre.trim()) {
       newErrors.nombre = "El nombre de la máquina es requerido.";
     }
+    if (!formData.color) {
+      newErrors.color = "Debes seleccionar un color.";
+    }
     if (!lugarSeleccionadoId) {
       newErrors.lugarId = "Debes seleccionar o crear un lugar.";
     }
@@ -275,7 +278,13 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
       } else {
         const error = await response.json();
         console.error('❌ Error en respuesta:', error);
-        alert(`Error: ${error.error}`);
+        // Mostrar detalles del error de validación si existen
+        let errorMessage = error.error || 'Error desconocido';
+        if (error.details && Array.isArray(error.details)) {
+          const detalles = error.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join('\n');
+          errorMessage += `\n\nDetalles:\n${detalles}`;
+        }
+        alert(`Error al guardar: ${errorMessage}`);
         setIsSaving(false); // Permitir reintentar en caso de error
       }
     } catch (error) {
@@ -425,7 +434,7 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
             value={formData.color}
             onChange={(e) => setFormData({ ...formData, color: e.target.value })}
             disabled={isSaving}
-            className="w-full h-12 rounded-xl border-2 border-yellow-300 bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full h-12 rounded-xl border-2 ${formErrors.color ? 'border-red-500' : 'border-yellow-300'} bg-white text-black px-4 focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
             required
           >
             <option value="">Selecciona un color</option>
@@ -433,6 +442,9 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
               <option key={color} value={color}>{color}</option>
             ))}
           </select>
+          {formErrors.color && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.color}</p>
+          )}
         </div>
 
         {/* Tipo */}
