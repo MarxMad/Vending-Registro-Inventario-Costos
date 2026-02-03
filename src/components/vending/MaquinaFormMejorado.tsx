@@ -149,14 +149,52 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
     setFormData(prev => ({ ...prev, tiposProductoChiclera: nuevosTipos }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Función para comprimir imagen usando canvas
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.onload = () => {
+          // Calcular nuevas dimensiones manteniendo aspecto
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          // Crear canvas y dibujar imagen redimensionada
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo crear contexto de canvas'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convertir a base64 con compresión
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          console.log(`📦 Imagen comprimida: ${width}x${height}, calidad: ${quality}, tamaño base64: ${compressedBase64.length} chars`);
+          resolve(compressedBase64);
+        };
+        img.onerror = () => reject(new Error('Error al cargar imagen'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Error al leer archivo'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       console.log('⚠️  No se seleccionó ningún archivo');
       return;
     }
 
-    console.log(`📸 Archivo seleccionado: ${file.name}, tamaño: ${file.size} bytes, tipo: ${file.type}`);
+    console.log(`📸 Archivo seleccionado: ${file.name}, tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB, tipo: ${file.type}`);
 
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
@@ -164,25 +202,32 @@ export function MaquinaFormMejorado({ userId, maquina, onClose, onSave }: Maquin
       return;
     }
 
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen debe ser menor a 5MB');
+    // Validar tamaño (máximo 10MB antes de compresión)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('La imagen debe ser menor a 10MB');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      console.log(`✅ Imagen convertida a base64 (longitud: ${base64String.length})`);
-      setFormData(prev => ({ ...prev, imagen: base64String }));
-      setImagenPreview(base64String);
-      console.log('✅ Preview de imagen actualizado');
-    };
-    reader.onerror = (error) => {
-      console.error('❌ Error leyendo archivo:', error);
-      alert('Error al leer la imagen. Por favor intenta de nuevo.');
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Comprimir imagen para que quepa en Redis (límite ~1MB)
+      // 800px de ancho y 70% calidad produce imágenes de ~50-150KB
+      const compressedBase64 = await compressImage(file, 800, 0.7);
+      
+      // Verificar que el resultado no sea demasiado grande para Redis
+      if (compressedBase64.length > 900000) { // ~900KB límite seguro
+        console.warn('⚠️ Imagen aún muy grande, comprimiendo más...');
+        const moreCompressed = await compressImage(file, 600, 0.5);
+        setFormData(prev => ({ ...prev, imagen: moreCompressed }));
+        setImagenPreview(moreCompressed);
+      } else {
+        setFormData(prev => ({ ...prev, imagen: compressedBase64 }));
+        setImagenPreview(compressedBase64);
+      }
+      console.log('✅ Imagen procesada y lista para guardar');
+    } catch (error) {
+      console.error('❌ Error procesando imagen:', error);
+      alert('Error al procesar la imagen. Por favor intenta con otra imagen.');
+    }
   };
 
   const handleRemoveImage = () => {
