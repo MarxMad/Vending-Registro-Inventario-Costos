@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchWithUserId } from "~/lib/apiClient";
 import { Button } from "~/components/ui/Button";
 import type { Maquina, Lugar } from "~/lib/types";
-import { Plus, MapPin, Package, Calendar, Edit, Trash2, Info, Building2 } from "lucide-react";
+import { Plus, MapPin, Package, Calendar, Edit, Trash2, Info, Building2, Clock } from "lucide-react";
 import { MaquinaDetalle } from "./MaquinaDetalle";
 import { MaquinaFormMejorado } from "./MaquinaFormMejorado";
 
@@ -13,6 +13,24 @@ interface MaquinasListProps {
   onSelectMaquina: (maquina: Maquina) => void;
   onNuevaRecoleccion: (maquina: Maquina) => void; // Mantenido para compatibilidad pero no se usa
 }
+
+// Helper para calcular días restantes para recolección
+const calcularDiasRestantes = (maquina: Maquina): number => {
+  const ahora = new Date();
+  const fechaReferencia = maquina.fechaUltimaRecoleccion || maquina.fechaInstalacion;
+  if (!fechaReferencia) return maquina.diasRecoleccionEstimados || 7;
+  
+  const ultimaFecha = new Date(fechaReferencia);
+  const diasTranscurridos = Math.floor(
+    (ahora.getTime() - ultimaFecha.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const diasEstimados = maquina.diasRecoleccionEstimados || 7;
+  return diasEstimados - diasTranscurridos;
+};
+
+const estaListaParaRecolectar = (maquina: Maquina): boolean => {
+  return calcularDiasRestantes(maquina) <= 0;
+};
 
 export function MaquinasList({ userId }: MaquinasListProps) {
   const [maquinas, setMaquinas] = useState<Maquina[]>([]);
@@ -149,10 +167,18 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                     {maquinasEnLugar.length} {maquinasEnLugar.length === 1 ? 'máquina' : 'máquinas'}
                   </span>
                 </div>
-                {maquinasEnLugar.map((maquina) => (
+                {maquinasEnLugar.map((maquina) => {
+                  const listaParaRecolectar = estaListaParaRecolectar(maquina);
+                  const diasRestantes = calcularDiasRestantes(maquina);
+                  
+                  return (
             <div
               key={maquina.id}
-              className="border rounded-lg p-4 space-y-2 bg-white dark:bg-neutral-900"
+              className={`border rounded-lg p-4 space-y-2 ${
+                listaParaRecolectar 
+                  ? 'bg-green-50 border-green-500 border-2 ring-2 ring-green-300 ring-offset-1' 
+                  : 'bg-white dark:bg-neutral-900'
+              }`}
             >
               {/* Imagen de la máquina - siempre mostrar, con placeholder si no hay */}
               <div className="mb-3 relative">
@@ -224,6 +250,22 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                 </div>
               </div>
 
+              {/* Indicador de recolección */}
+              <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${
+                listaParaRecolectar 
+                  ? 'bg-green-100 text-green-800 font-semibold' 
+                  : diasRestantes <= 2 
+                    ? 'bg-yellow-100 text-yellow-800' 
+                    : 'bg-gray-100 text-gray-600'
+              }`}>
+                <Clock className={`w-4 h-4 ${listaParaRecolectar ? 'text-green-600' : ''}`} />
+                {listaParaRecolectar ? (
+                  <span>✅ ¡Lista para recolectar! ({Math.abs(diasRestantes)} día{Math.abs(diasRestantes) !== 1 ? 's' : ''} desde fecha)</span>
+                ) : (
+                  <span>{diasRestantes} día{diasRestantes !== 1 ? 's' : ''} para recolección</span>
+                )}
+              </div>
+
               {maquina.fechaUltimaRecoleccion && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
@@ -245,7 +287,8 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                 </Button>
               </div>
             </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
@@ -263,10 +306,18 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                   {maquinas.filter(m => !m.lugarId || !lugares.find(l => l.id === m.lugarId)).length} máquinas
                 </span>
               </div>
-              {maquinas.filter(m => !m.lugarId || !lugares.find(l => l.id === m.lugarId)).map((maquina) => (
+              {maquinas.filter(m => !m.lugarId || !lugares.find(l => l.id === m.lugarId)).map((maquina) => {
+                const listaParaRecolectar = estaListaParaRecolectar(maquina);
+                const diasRestantes = calcularDiasRestantes(maquina);
+                
+                return (
                 <div
                   key={maquina.id}
-                  className="border rounded-lg p-4 space-y-2 bg-white dark:bg-neutral-900"
+                  className={`border rounded-lg p-4 space-y-2 ${
+                    listaParaRecolectar 
+                      ? 'bg-green-50 border-green-500 border-2 ring-2 ring-green-300 ring-offset-1' 
+                      : 'bg-white dark:bg-neutral-900'
+                  }`}
                 >
                   {/* Imagen de la máquina - siempre mostrar, con placeholder si no hay */}
                   <div className="mb-3 relative">
@@ -337,6 +388,22 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                     </div>
                   </div>
 
+                  {/* Indicador de recolección */}
+                  <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${
+                    listaParaRecolectar 
+                      ? 'bg-green-100 text-green-800 font-semibold' 
+                      : diasRestantes <= 2 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Clock className={`w-4 h-4 ${listaParaRecolectar ? 'text-green-600' : ''}`} />
+                    {listaParaRecolectar ? (
+                      <span>✅ ¡Lista para recolectar! ({Math.abs(diasRestantes)} día{Math.abs(diasRestantes) !== 1 ? 's' : ''} desde fecha)</span>
+                    ) : (
+                      <span>{diasRestantes} día{diasRestantes !== 1 ? 's' : ''} para recolección</span>
+                    )}
+                  </div>
+
                   {maquina.fechaUltimaRecoleccion && (
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="w-4 h-4" />
@@ -358,7 +425,8 @@ export function MaquinasList({ userId }: MaquinasListProps) {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

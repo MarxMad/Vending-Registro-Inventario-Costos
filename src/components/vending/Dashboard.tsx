@@ -169,25 +169,38 @@ export function Dashboard({ userId }: DashboardProps) {
   };
 
   const calcularProgresoRecoleccion = (maquina: Maquina): number => {
-    if (!maquina.fechaUltimaRecoleccion) return 0;
     const ahora = new Date();
-    const ultimaRecoleccion = new Date(maquina.fechaUltimaRecoleccion);
+    // Usar fechaUltimaRecoleccion si existe, sino usar fechaInstalacion como referencia
+    const fechaReferencia = maquina.fechaUltimaRecoleccion || maquina.fechaInstalacion;
+    if (!fechaReferencia) return 0;
+    
+    const ultimaFecha = new Date(fechaReferencia);
     const diasTranscurridos = Math.floor(
-      (ahora.getTime() - ultimaRecoleccion.getTime()) / (1000 * 60 * 60 * 24)
+      (ahora.getTime() - ultimaFecha.getTime()) / (1000 * 60 * 60 * 24)
     );
     const diasEstimados = maquina.diasRecoleccionEstimados || 7;
-    return Math.min(100, (diasTranscurridos / diasEstimados) * 100);
+    // No limitar a 100% para saber cuánto se pasó
+    return (diasTranscurridos / diasEstimados) * 100;
   };
 
   const getDiasRestantes = (maquina: Maquina): number => {
-    if (!maquina.fechaUltimaRecoleccion) return maquina.diasRecoleccionEstimados || 7;
     const ahora = new Date();
-    const ultimaRecoleccion = new Date(maquina.fechaUltimaRecoleccion);
+    // Usar fechaUltimaRecoleccion si existe, sino usar fechaInstalacion como referencia
+    const fechaReferencia = maquina.fechaUltimaRecoleccion || maquina.fechaInstalacion;
+    if (!fechaReferencia) return maquina.diasRecoleccionEstimados || 7;
+    
+    const ultimaFecha = new Date(fechaReferencia);
     const diasTranscurridos = Math.floor(
-      (ahora.getTime() - ultimaRecoleccion.getTime()) / (1000 * 60 * 60 * 24)
+      (ahora.getTime() - ultimaFecha.getTime()) / (1000 * 60 * 60 * 24)
     );
     const diasEstimados = maquina.diasRecoleccionEstimados || 7;
-    return Math.max(0, diasEstimados - diasTranscurridos);
+    // Puede ser negativo si se pasó la fecha
+    return diasEstimados - diasTranscurridos;
+  };
+  
+  // Determinar si la máquina está lista para recolectar
+  const estaListaParaRecolectar = (maquina: Maquina): boolean => {
+    return getDiasRestantes(maquina) <= 0;
   };
 
   const maxIngresos = Math.max(...ingresosPorDia.map((d) => d.ingresos), 1);
@@ -329,7 +342,25 @@ export function Dashboard({ userId }: DashboardProps) {
             {maquinasOrdenadas.map((maquina, index) => {
               const progreso = calcularProgresoRecoleccion(maquina);
               const diasRestantes = getDiasRestantes(maquina);
-              const colorBarra = progreso >= 100 ? "bg-red-500" : progreso >= 75 ? "bg-yellow-500" : "bg-blue-500";
+              const listaParaRecolectar = estaListaParaRecolectar(maquina);
+              
+              // Verde brillante si está lista, rojo si se pasó mucho, amarillo si está cerca, azul si falta
+              const colorBarra = listaParaRecolectar 
+                ? "bg-green-500" 
+                : progreso >= 75 
+                  ? "bg-yellow-500" 
+                  : "bg-blue-500";
+              
+              const colorTexto = listaParaRecolectar 
+                ? 'text-green-600' 
+                : progreso >= 75 
+                  ? 'text-orange-600' 
+                  : 'text-blue-600';
+              
+              // Borde verde brillante para máquinas listas
+              const bordeCard = listaParaRecolectar 
+                ? "ring-2 ring-green-500 ring-offset-2 bg-green-50" 
+                : "";
               
               return (
                 <motion.div
@@ -337,35 +368,59 @@ export function Dashboard({ userId }: DashboardProps) {
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: index * 0.1 }}
-                  className="space-y-2"
+                  className={`space-y-2 p-3 rounded-lg ${bordeCard}`}
                 >
                   <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-800">{maquina.nombre}</p>
-                      <p className="text-xs text-gray-600">
-                        {(() => {
-                          const lugar = lugares.find(l => l.id === maquina.lugarId);
-                          return lugar ? `${lugar.nombre} - ${lugar.direccion}` : 'Sin lugar asignado';
-                        })()}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {listaParaRecolectar && (
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="w-3 h-3 bg-green-500 rounded-full"
+                        />
+                      )}
+                      <div>
+                        <p className={`font-bold ${listaParaRecolectar ? 'text-green-800' : 'text-gray-800'}`}>
+                          {maquina.nombre}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {(() => {
+                            const lugar = lugares.find(l => l.id === maquina.lugarId);
+                            return lugar ? `${lugar.nombre} - ${lugar.direccion}` : 'Sin lugar asignado';
+                          })()}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-bold ${progreso >= 100 ? 'text-red-600' : progreso >= 75 ? 'text-orange-600' : 'text-yellow-600'}`}>
-                        {diasRestantes} días
-                      </p>
-                      <p className="text-xs text-gray-500">restantes</p>
+                      {listaParaRecolectar ? (
+                        <>
+                          <p className="text-sm font-bold text-green-600">
+                            ¡LISTA!
+                          </p>
+                          <p className="text-xs text-green-600">
+                            {Math.abs(diasRestantes)} día{Math.abs(diasRestantes) !== 1 ? 's' : ''} desde fecha
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className={`text-sm font-bold ${colorTexto}`}>
+                            {diasRestantes} día{diasRestantes !== 1 ? 's' : ''}
+                          </p>
+                          <p className="text-xs text-gray-500">restantes</p>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${progreso}%` }}
+                      animate={{ width: `${Math.min(progreso, 100)}%` }}
                       transition={{ delay: index * 0.1 + 0.2, duration: 0.8 }}
                       className={`h-full ${colorBarra} rounded-full relative`}
                     >
                       {progreso > 20 && (
                         <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                          {Math.round(progreso)}%
+                          {listaParaRecolectar ? '✓' : `${Math.round(progreso)}%`}
                         </span>
                       )}
                     </motion.div>
